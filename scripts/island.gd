@@ -25,8 +25,8 @@ const MAP: Array[String] = [
 const GRASS_THICKNESS := 0.5
 const GRASS_COLOR := Color(0.49, 0.72, 0.36)
 const PATH_COLOR := Color(0.83, 0.71, 0.5)
-const DIRT_COLOR := Color(0.55, 0.4, 0.28)
-const ROCK_COLOR := Color(0.52, 0.47, 0.45)
+const DIRT_COLOR := Color(0.72, 0.46, 0.32)
+const ROCK_COLOR := Color(0.6, 0.6, 0.76)
 
 ## Tile the player starts on.
 @export var start_cell := Vector2i(7, 8)
@@ -60,6 +60,50 @@ func _prop_layout() -> Array[Dictionary]:
 		{"type": "tree", "cell": Vector2i(6, 1), "kind": "crooked"},
 		{"type": "tree", "cell": Vector2i(9, 1), "kind": "pine"},
 		{"type": "tree", "cell": Vector2i(13, 7), "kind": "bushy"},
+		# Fence along the back (north) edge.
+		{"type": "fence", "cell": Vector2i(3, 0), "side": "north"},
+		{"type": "fence", "cell": Vector2i(4, 0), "side": "north"},
+		{"type": "fence", "cell": Vector2i(5, 0), "side": "north"},
+		{"type": "fence", "cell": Vector2i(6, 0), "side": "north"},
+		{"type": "fence", "cell": Vector2i(7, 0), "side": "north"},
+		{"type": "fence", "cell": Vector2i(8, 0), "side": "north"},
+		{"type": "fence", "cell": Vector2i(9, 0), "side": "north"},
+		{"type": "fence", "cell": Vector2i(10, 0), "side": "north"},
+		{"type": "fence", "cell": Vector2i(11, 0), "side": "north"},
+		{"type": "fence", "cell": Vector2i(12, 0), "side": "north"},
+		# Lanterns beside the paths.
+		{"type": "lantern", "cell": Vector2i(6, 4)},
+		{"type": "lantern", "cell": Vector2i(9, 4)},
+		{"type": "lantern", "cell": Vector2i(6, 11)},
+		{"type": "lantern", "cell": Vector2i(9, 11)},
+		# Little gardens beside each house.
+		{"type": "flowers_tall", "cell": Vector2i(2, 3)},
+		{"type": "plant", "cell": Vector2i(2, 4)},
+		{"type": "barrel", "cell": Vector2i(5, 3)},
+		{"type": "flowers", "cell": Vector2i(5, 4)},
+		{"type": "crate", "cell": Vector2i(10, 3), "rot": 15.0},
+		{"type": "flowers", "cell": Vector2i(10, 4), "rot": 90.0},
+		{"type": "flowers_tall", "cell": Vector2i(13, 3), "rot": 45.0},
+		{"type": "plant", "cell": Vector2i(13, 4), "rot": 90.0},
+		{"type": "plant", "cell": Vector2i(2, 10), "rot": 180.0},
+		{"type": "flowers_tall", "cell": Vector2i(2, 11), "rot": 120.0},
+		{"type": "barrel", "cell": Vector2i(5, 10)},
+		{"type": "flowers", "cell": Vector2i(5, 11), "rot": 45.0},
+		{"type": "plant", "cell": Vector2i(10, 10), "rot": 45.0},
+		{"type": "flowers_tall", "cell": Vector2i(10, 11), "rot": 200.0},
+		{"type": "crate", "cell": Vector2i(13, 10), "rot": -20.0},
+		{"type": "flowers", "cell": Vector2i(13, 11), "rot": 135.0},
+		# Bits of nature around the edges.
+		{"type": "rock", "cell": Vector2i(2, 7), "kind": "rock-small", "rot": 30.0},
+		{"type": "rock", "cell": Vector2i(14, 12), "kind": "rock-wide", "rot": -40.0},
+		{"type": "rock", "cell": Vector2i(12, 1), "kind": "rock-small", "rot": 160.0},
+		{"type": "grass", "cell": Vector2i(4, 7)},
+		{"type": "grass", "cell": Vector2i(11, 8), "rot": 70.0},
+		{"type": "grass", "cell": Vector2i(8, 14), "rot": 140.0},
+		{"type": "grass", "cell": Vector2i(4, 1), "rot": 20.0},
+		{"type": "mushrooms", "cell": Vector2i(12, 14)},
+		{"type": "mushrooms", "cell": Vector2i(3, 13), "rot": 90.0},
+		{"type": "cart", "cell": Vector2i(14, 6), "rot": 90.0},
 	]
 
 

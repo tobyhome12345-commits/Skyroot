@@ -1,6 +1,6 @@
 extends SceneTree
-## Headless movement test: holds keys and checks the player stays on the
-## island and cannot walk through props.
+## Headless gameplay test: holds keys and checks the player stays on the
+## island, cannot walk through props, and that F3 toggles the debug view.
 ## Usage: godot_console --headless --path . --script res://tools/test_movement.gd
 
 var _failures := 0
@@ -58,6 +58,15 @@ func _run() -> void:
 	_check(_player.global_position.x > tree_x + 0.35,
 			"blocked by tree (x=%.2f, tree=%.2f)" % [_player.global_position.x, tree_x])
 
+	# F3 toggles the debug view on and off.
+	var debug_view := root.find_child("DebugView", true, false)
+	var grid_lines := debug_view.get_node("GridLines") as Node3D
+	_check(not grid_lines.visible, "debug view starts hidden")
+	await _press_key(KEY_F3)
+	_check(grid_lines.visible, "F3 shows debug view")
+	await _press_key(KEY_F3)
+	_check(not grid_lines.visible, "F3 again hides debug view")
+
 	print("RESULT: %s" % ("ALL PASSED" if _failures == 0 else "%d FAILED" % _failures))
 	quit(1 if _failures > 0 else 0)
 
@@ -77,6 +86,17 @@ func _hold(action: String, seconds: float) -> void:
 		await physics_frame
 	Input.action_release(action)
 	await _settle()
+
+
+func _press_key(keycode: Key) -> void:
+	for pressed in [true, false]:
+		var ev := InputEventKey.new()
+		ev.physical_keycode = keycode
+		ev.keycode = keycode
+		ev.pressed = pressed
+		Input.parse_input_event(ev)
+		await process_frame
+	await process_frame
 
 
 func _check(ok: bool, what: String) -> void:

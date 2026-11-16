@@ -17,6 +17,7 @@ The Godot console exe is:
   (loads and parses every script; works even before a main scene exists).
   Once a main scene exists, also run it briefly: `godot_console --headless --path . --quit-after 60`
   Read the output; fix any `SCRIPT ERROR` / `ERROR` / `Parse Error` lines before moving on.
+- Gameplay test (movement, blocking, F3 debug): `godot_console --headless --path . --script res://tools/test_movement.gd` — must print `RESULT: ALL PASSED`.
 - Check the version: `godot_console --version`
 
 ## Language

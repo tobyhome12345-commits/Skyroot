@@ -29,11 +29,39 @@ const DIRT_COLOR := Color(0.55, 0.4, 0.28)
 const ROCK_COLOR := Color(0.52, 0.47, 0.45)
 
 var map_size := Vector2i(16, 16)
+## Tiles taken by props (cell -> prop name). Used to stop overlaps.
+var occupied := {}
+
+
+## Every prop on the island: type, top-left tile, footprint in tiles.
+func _prop_layout() -> Array[Dictionary]:
+	return [
+		{"type": "house", "cell": Vector2i(3, 3), "size": Vector2i(2, 2),
+			"walls": Color(0.96, 0.89, 0.76), "roof": Color(0.78, 0.38, 0.3)},
+		{"type": "house", "cell": Vector2i(11, 3), "size": Vector2i(2, 2),
+			"walls": Color(0.93, 0.84, 0.7), "roof": Color(0.4, 0.55, 0.7)},
+		{"type": "house", "cell": Vector2i(3, 10), "size": Vector2i(2, 2),
+			"walls": Color(0.98, 0.92, 0.82), "roof": Color(0.55, 0.65, 0.4)},
+		{"type": "house", "cell": Vector2i(11, 10), "size": Vector2i(2, 2),
+			"walls": Color(0.9, 0.82, 0.72), "roof": Color(0.85, 0.6, 0.35)},
+		{"type": "well", "cell": Vector2i(9, 8), "size": Vector2i(1, 1)},
+		{"type": "notice_board", "cell": Vector2i(6, 6), "size": Vector2i(1, 1)},
+		{"type": "tree", "cell": Vector2i(1, 4), "size": Vector2i(1, 1)},
+		{"type": "tree", "cell": Vector2i(14, 4), "size": Vector2i(1, 1)},
+		{"type": "tree", "cell": Vector2i(1, 9), "size": Vector2i(1, 1)},
+		{"type": "tree", "cell": Vector2i(14, 9), "size": Vector2i(1, 1)},
+		{"type": "tree", "cell": Vector2i(5, 14), "size": Vector2i(1, 1)},
+		{"type": "tree", "cell": Vector2i(10, 14), "size": Vector2i(1, 1)},
+		{"type": "tree", "cell": Vector2i(6, 1), "size": Vector2i(1, 1)},
+		{"type": "tree", "cell": Vector2i(9, 1), "size": Vector2i(1, 1)},
+		{"type": "tree", "cell": Vector2i(13, 7), "size": Vector2i(1, 1)},
+	]
 
 
 func _ready() -> void:
 	map_size = Vector2i(MAP[0].length(), MAP.size())
 	_build_ground()
+	_place_props()
 
 
 # ---------------------------------------------------------------- map helpers
@@ -71,6 +99,61 @@ func _edge_distance(cell: Vector2i) -> int:
 func _cell_noise(cell: Vector2i, salt: int) -> float:
 	var h := hash(Vector3i(cell.x, cell.y, salt))
 	return float(h % 1000) / 1000.0
+
+
+# ---------------------------------------------------------------- props
+
+func _place_props() -> void:
+	var props_root := Node3D.new()
+	props_root.name = "Props"
+	add_child(props_root)
+	var tree_leaves := [Color(0.36, 0.62, 0.33), Color(0.42, 0.68, 0.36), Color(0.5, 0.7, 0.38)]
+	var index := 0
+	for p in _prop_layout():
+		var cell: Vector2i = p["cell"]
+		var size: Vector2i = p["size"]
+		var prop_name := "%s_%d" % [p["type"], index]
+		if not _claim_footprint(cell, size, prop_name):
+			continue
+		var node: Node3D
+		match p["type"]:
+			"house":
+				node = Props.house(p["walls"], p["roof"])
+			"tree":
+				node = Props.tree(tree_leaves[index % tree_leaves.size()])
+			"well":
+				node = Props.well()
+			"notice_board":
+				node = Props.notice_board()
+			_:
+				push_error("Unknown prop type: %s" % p["type"])
+				continue
+		node.name = prop_name
+		node.position = Grid.footprint_center(cell, size, map_size)
+		props_root.add_child(node)
+		index += 1
+
+
+## Checks the footprint is fully on ground and not shared, then reserves it.
+## Stops anything from floating over the edge or clipping into another prop.
+func _claim_footprint(cell: Vector2i, size: Vector2i, prop_name: String) -> bool:
+	for dz in size.y:
+		for dx in size.x:
+			var c := cell + Vector2i(dx, dz)
+			if not is_ground(c):
+				push_error("%s at %s hangs off the island (tile %s)" % [prop_name, cell, c])
+				return false
+			if occupied.has(c):
+				push_error("%s at %s overlaps %s (tile %s)" % [prop_name, cell, occupied[c], c])
+				return false
+	for dz in size.y:
+		for dx in size.x:
+			occupied[cell + Vector2i(dx, dz)] = prop_name
+	return true
+
+
+func is_free(cell: Vector2i) -> bool:
+	return is_ground(cell) and not occupied.has(cell)
 
 
 # ---------------------------------------------------------------- ground

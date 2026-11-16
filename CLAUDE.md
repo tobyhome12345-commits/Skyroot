@@ -19,7 +19,14 @@ The Godot console exe is:
   Read the output; fix any `SCRIPT ERROR` / `ERROR` / `Parse Error` lines before moving on.
 - Gameplay test (movement, blocking, F3 debug): `godot_console --headless --path . --script res://tools/test_movement.gd` — must print `RESULT: ALL PASSED`.
 - Fit check (tiles, flush on ground, overlaps, colliders, gaps): `godot_console --headless --path . --script res://tools/check_fit.gd` must print `RESULT: ALL PASSED`. Run it after any change to props or models.
+- Window test (not headless; start maximized, F11 fullscreen, Esc untouched): `godot_console --path . --script res://tools/test_fullscreen.gd`
 - Check the version: `godot_console --version`
+
+## Display
+
+- Base resolution is 1920x1080 with `canvas_items` stretch and `keep` aspect. The game starts maximized.
+- F11 toggles fullscreen (`WindowControls` autoload). **Esc is reserved for the pause menu**, so don't bind it to anything else.
+- Screen effects must look the same at any resolution, so size them by screen fraction, not pixels (see `shaders/tilt_shift.gdshader`).
 
 ## Assets
 

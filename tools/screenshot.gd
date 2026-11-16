@@ -5,6 +5,7 @@ extends SceneTree
 ##   pitch=<deg>      override camera pitch (e.g. pitch=15 to see the underside)
 ##   distance=<m>     override camera distance
 ##   debug            turn on the debug view (grid lines + collision shapes)
+##   notilt           hide the tilt-shift blur (to compare)
 ##   frames=<n>       frames to wait after setup before capturing (default 10)
 ##   walk=<action>:<s> hold a move action (e.g. walk=move_down:1.5) first
 
@@ -38,6 +39,9 @@ func _capture() -> void:
 				call_group("debug_toggle", "set_debug_visible", true)
 			"frames":
 				wait_frames = int(parts[1])
+			"notilt":
+				for layer in root.find_children("TiltShift", "CanvasLayer", true, false):
+					layer.visible = false
 	if camera and camera.has_method("snap_to_target"):
 		camera.snap_to_target()
 	# walk=<action>:<seconds> holds a movement key before capturing.

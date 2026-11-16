@@ -18,7 +18,14 @@ The Godot console exe is:
   Once a main scene exists, also run it briefly: `godot_console --headless --path . --quit-after 60`
   Read the output; fix any `SCRIPT ERROR` / `ERROR` / `Parse Error` lines before moving on.
 - Gameplay test (movement, blocking, F3 debug): `godot_console --headless --path . --script res://tools/test_movement.gd` — must print `RESULT: ALL PASSED`.
+- Fit check (tiles, flush on ground, overlaps, colliders, gaps): `godot_console --headless --path . --script res://tools/check_fit.gd` must print `RESULT: ALL PASSED`. Run it after any change to props or models.
 - Check the version: `godot_console --version`
+
+## Assets
+
+- Kenney CC0 packs live in `Assets/`. Credits are in `Assets/CREDITS.md`, so update it when a new pack is used.
+- Use the GLB/GLTF files only. The other formats are skipped via `.gdignore`.
+- Place models through `ModelLib` (`scripts/model_lib.gd`), which scales them to the tile footprint and sits them flush on the ground.
 
 ## Language
 
@@ -31,6 +38,7 @@ The Godot console exe is:
 
 ## Work style
 
+- **Never delete anything without asking the user first** and getting a yes. That includes generated files such as Godot `.import` files. The project is in OneDrive, so bulk deletes pop up alarming prompts.
 - **Small steps only.** Do one small change at a time.
 - **Test after each step** (at minimum the headless error check above).
 

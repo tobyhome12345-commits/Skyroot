@@ -42,7 +42,31 @@ static func instance(path: String) -> Node3D:
 			push_error("Model not found: %s" % path)
 			return Node3D.new()
 		_cache[path] = scene
-	return (_cache[path] as PackedScene).instantiate() as Node3D
+	var node := (_cache[path] as PackedScene).instantiate() as Node3D
+	_crisp_atlas(node)
+	return node
+
+
+static var _crisp_materials := {}
+
+
+## Kenney models colour faces by sampling flat swatches in a small atlas.
+## Smooth (mipmapped) filtering blends neighbouring swatches on thin faces,
+## which shows up as rainbow stripes, so sample the atlas pixel-exact.
+static func _crisp_atlas(node: Node) -> void:
+	for child in node.find_children("*", "MeshInstance3D", true, false):
+		var mi := child as MeshInstance3D
+		if mi.mesh == null:
+			continue
+		for i in mi.mesh.get_surface_count():
+			var mat := mi.get_active_material(i) as BaseMaterial3D
+			if mat == null:
+				continue
+			if not _crisp_materials.has(mat):
+				var copy := mat.duplicate() as BaseMaterial3D
+				copy.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
+				_crisp_materials[mat] = copy
+			mi.set_surface_override_material(i, _crisp_materials[mat])
 
 
 ## A model placed exactly as authored, uniformly scaled. Used for modular

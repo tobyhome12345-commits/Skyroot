@@ -7,8 +7,8 @@ render_mode cull_disabled;
 
 uniform sampler2D detail_tex : source_color, filter_linear_mipmap, repeat_enable;
 // How many times the texture repeats per metre.
-uniform float detail_scale = 0.35;
-uniform float grass_strength = 0.35;
+uniform float detail_scale = 0.5;
+uniform float grass_strength = 0.8;
 uniform float rock_strength = 0.9;
 // Average brightness of the texture, so it darkens and lightens around 1.0.
 uniform float detail_mid = 0.38;

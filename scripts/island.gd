@@ -23,6 +23,13 @@ const MAP: Array[String] = [
 ]
 
 const GRASS_THICKNESS := 0.5
+## Path tiles (Modular Cave dirt floor) sit flush on the ground at y = 0, like
+## every model. The ground mesh under them is recessed this much so the two
+## surfaces never overlap (no flicker).
+const PATH_DEPTH := 0.05
+const PATH_TILE_SCALE := 0.5  # cave floor tiles are 4 m; half size = 1 tile
+## Height of the Modular Cave "template-wall-half" cliff pieces.
+const CLIFF_HEIGHT := 4.05
 const GRASS_COLOR := Color(0.49, 0.72, 0.36)
 const PATH_COLOR := Color(0.83, 0.71, 0.5)
 const DIRT_COLOR := Color(0.72, 0.46, 0.32)
@@ -240,20 +247,66 @@ func is_free(cell: Vector2i) -> bool:
 
 # ---------------------------------------------------------------- ground
 
+## Carved rock cliff walls (Modular Cave pack) along every outer edge of the
+## island, just under the grass and dirt layer. Each piece is exactly one
+## tile wide; its face sits on the tile edge and its body reaches inwards,
+## hidden inside the island's rock.
+func _build_cliffs() -> void:
+	var cliffs := Node3D.new()
+	cliffs.name = "Cliffs"
+	add_child(cliffs)
+	var stone_atlas := load(ModelLib.CAVE_ATLAS) as Texture2D
+	var sides := {
+		Vector2i(0, 1): 0.0,     # south: face +z
+		Vector2i(1, 0): 90.0,    # east:  face +x
+		Vector2i(0, -1): 180.0,  # north: face -z
+		Vector2i(-1, 0): -90.0,  # west:  face -x
+	}
+	for cell in ground_cells():
+		for dir: Vector2i in sides:
+			if is_ground(cell + dir):
+				continue
+			var edge := Vector3(dir.x, 0.0, dir.y) * (Grid.TILE / 2.0)
+			var pos := Grid.cell_center(cell, map_size) + edge + Vector3(0.0, -GRASS_THICKNESS - CLIFF_HEIGHT, 0.0)
+			var wall := ModelLib.piece(ModelLib.CAVE + "template-wall-half.glb", 1.0, pos, sides[dir])
+			wall.name = "cliff_%d_%d_%d_%d" % [cell.x, cell.y, dir.x, dir.y]
+			ModelLib.set_atlas(wall, stone_atlas)
+			cliffs.add_child(wall)
+
+
+## Dirt-and-stone floor tiles from the Modular Cave pack on every path tile,
+## turned in 90 degree steps so the pattern doesn't repeat.
+func _build_path_tiles() -> void:
+	var tiles := Node3D.new()
+	tiles.name = "PathTiles"
+	add_child(tiles)
+	for cell in ground_cells():
+		if not is_path(cell):
+			continue
+		var rot := 90.0 * float(int(_cell_noise(cell, 4) * 4.0))
+		var pos := Grid.cell_center(cell, map_size)
+		var tile := ModelLib.piece(ModelLib.CAVE + "template-floor-detail.glb", PATH_TILE_SCALE, pos, rot)
+		tile.name = "path_%d_%d" % [cell.x, cell.y]
+		tile.set_meta("cell", cell)
+		tiles.add_child(tile)
+
+
 func _build_ground() -> void:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var half := Grid.TILE / 2.0
 	for cell in ground_cells():
 		var c := Grid.cell_center(cell, map_size)
-		# Grass / path slab, top surface at y = 0.
+		# Grass slab, top surface at y = 0 (path tiles: recessed, tile on top).
 		var top_color := PATH_COLOR if is_path(cell) else GRASS_COLOR
 		top_color = top_color.darkened(_cell_noise(cell, 1) * 0.06)
 		var side_color := DIRT_COLOR
+		var top := -PATH_DEPTH if is_path(cell) else 0.0
 		MeshUtil.add_box(st, Vector3(c.x - half, -GRASS_THICKNESS, c.z - half),
-				Vector3(c.x + half, 0.0, c.z + half), top_color, side_color)
+				Vector3(c.x + half, top, c.z + half), top_color, side_color)
 		# Rock column hanging below. Deeper towards the middle, in whole tiles.
-		var depth_tiles := _edge_distance(cell) + int(_cell_noise(cell, 2) * 2.0)
+		# At least 2 tiles deep so the 4 m cliff walls on the rim have rock behind them.
+		var depth_tiles := maxi(2, _edge_distance(cell) + int(_cell_noise(cell, 2) * 2.0))
 		var bottom := -GRASS_THICKNESS - float(depth_tiles) * Grid.TILE
 		var rock := ROCK_COLOR.darkened(_cell_noise(cell, 3) * 0.15)
 		MeshUtil.add_box(st, Vector3(c.x - half, bottom, c.z - half),
@@ -262,8 +315,13 @@ func _build_ground() -> void:
 	var mesh_instance := MeshInstance3D.new()
 	mesh_instance.name = "Ground"
 	mesh_instance.mesh = st.commit()
-	mesh_instance.material_override = MeshUtil.vertex_color_material()
+	var ground_mat := ShaderMaterial.new()
+	ground_mat.shader = preload("res://shaders/island_ground.gdshader")
+	ground_mat.set_shader_parameter("detail_tex", ModelLib.stone_texture())
+	mesh_instance.material_override = ground_mat
 	add_child(mesh_instance)
+	_build_path_tiles()
+	_build_cliffs()
 
 	# Floor collision: one box per ground tile.
 	var floor_body := StaticBody3D.new()

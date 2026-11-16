@@ -213,10 +213,42 @@ func _check_ground() -> void:
 		var a := faces[i]
 		var b := faces[i + 1]
 		var c := faces[i + 2]
-		if is_zero_approx(a.y) and is_zero_approx(b.y) and is_zero_approx(c.y):
+		var y := a.y
+		if is_equal_approx(a.y, b.y) and is_equal_approx(a.y, c.y) and (is_zero_approx(y) or is_equal_approx(y, -_island.PATH_DEPTH)):
 			top_cells[Grid.world_to_cell((a + b + c) / 3.0, _island.map_size)] = true
 	for c in ground:
-		_expect(top_cells.has(c), "grass surface covers tile %s" % c)
+		_expect(top_cells.has(c), "ground surface covers tile %s" % c)
+	# Every path tile has a paving tile whose top is flush with the grass.
+	var paving := {}
+	for t in _island.get_node("PathTiles").get_children():
+		var box := ModelUtil.aabb_in(t as Node3D, _island)
+		var cell: Vector2i = t.get_meta("cell")
+		paving[cell] = true
+		_expect(absf(box.position.y) <= GROUND_TOLERANCE, "path tile %s sits flush on the ground (y=%.3f)" % [cell, box.position.y])
+		_expect(box.end.y <= 0.06, "path tile %s stones stay low enough to walk over (%.3f)" % [cell, box.end.y])
+		var r := Rect2(Vector2(box.position.x, box.position.z), Vector2(box.size.x, box.size.z))
+		var centre := Grid.cell_center(cell, _island.map_size)
+		var tile_rect := Rect2(Vector2(centre.x, centre.z) - Vector2.ONE * Grid.TILE / 2.0, Vector2.ONE * Grid.TILE)
+		_expect(tile_rect.grow(0.01).encloses(r) and r.size.x > Grid.TILE - 0.02 and r.size.y > Grid.TILE - 0.02,
+				"path tile %s exactly fills its tile (%s)" % [cell, r])
+	for c in ground:
+		if _island.is_path(c):
+			_expect(paving.has(c), "path tile %s is paved" % c)
+	# Cliff walls: under the grass layer, faces on the island edge, never sticking out.
+	var island_rect := Rect2(-Vector2(_island.map_size) * Grid.TILE / 2.0, Vector2(_island.map_size) * Grid.TILE)
+	var cliff_count := 0
+	for w in _island.get_node("Cliffs").get_children():
+		var box := ModelUtil.aabb_in(w as Node3D, _island)
+		cliff_count += 1
+		_expect(box.end.y <= -_island.GRASS_THICKNESS + GROUND_TOLERANCE, "%s stays under the grass layer" % w.name)
+		_expect(island_rect.grow(0.02).encloses(Rect2(Vector2(box.position.x, box.position.z), Vector2(box.size.x, box.size.z))),
+				"%s doesn't stick out past the island edge" % w.name)
+	var edge_faces := 0
+	for c in ground:
+		for d in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+			if not _island.is_ground(c + d):
+				edge_faces += 1
+	_expect(cliff_count == edge_faces, "every outer edge has a cliff wall (%d / %d)" % [cliff_count, edge_faces])
 	var mesh_box := mesh.get_aabb()
 	_expect(mesh_box.position.y < -Grid.TILE, "rocky underside hangs below the island (bottom y=%.1f)" % mesh_box.position.y)
 

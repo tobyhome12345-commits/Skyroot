@@ -18,8 +18,26 @@ const TOWN_ATLAS := "res://Assets/Houses/Models/GLB format/Textures/colormap.png
 const ROOF_SWATCH := Vector2i(64, 384)
 const RED_SWATCH := Rect2i(0, 384, 64, 128)
 
+const CAVE := "res://Assets/Modular Cave/Models/GLB format/"
+## The Modular Cave atlas starts with a 128 x 128 px stone texture.
+const CAVE_ATLAS := "res://Assets/Modular Cave/Models/Textures/variation-a.png"
+const STONE_REGION := Rect2i(0, 0, 128, 128)
+
 static var _cache := {}
 static var _red_roof_atlas: Texture2D
+static var _stone_texture: Texture2D
+
+
+## The stone texture cut out of the Modular Cave atlas, for the island ground.
+static func stone_texture() -> Texture2D:
+	if _stone_texture == null:
+		var img := (load(CAVE_ATLAS) as Texture2D).get_image()
+		if img.is_compressed():
+			img.decompress()
+		var stone := img.get_region(STONE_REGION)
+		stone.generate_mipmaps()
+		_stone_texture = ImageTexture.create_from_image(stone)
+	return _stone_texture
 
 
 ## The Town atlas with the roof swatch recoloured to the pack's red.

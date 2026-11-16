@@ -36,7 +36,10 @@ The Godot console exe is:
 ## Git & GitHub
 
 - Repo: https://github.com/tobyhome12345-commits/Skyroot (branch `main`, remote `origin`).
-- After each **working** stage (error check passes), commit with a clear message and `git push`.
+- **Always save, commit and push after every update** — no exceptions, however small the change.
+  1. Save the game: make sure every changed scene (`.tscn`), resource (`.tres`) and script is written to disk.
+  2. Run the error check.
+  3. `git add`, commit with a clear message, then `git push`.
 - **Never commit passwords, tokens or keys.** Check `git status` / `git diff --cached` before every commit.
 - Show the user the push result (terminal output or the GitHub page) after each step.
 

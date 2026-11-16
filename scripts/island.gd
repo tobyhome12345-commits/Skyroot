@@ -40,28 +40,26 @@ var map_size := Vector2i(16, 16)
 var occupied := {}
 
 
-## Every prop on the island: type, top-left tile, footprint in tiles.
+## Every prop on the island: type, top-left tile, footprint in tiles (size
+## defaults to 1 x 1), plus options for the builder in props.gd.
 func _prop_layout() -> Array[Dictionary]:
 	return [
-		{"type": "house", "cell": Vector2i(3, 3), "size": Vector2i(2, 2),
-			"walls": Color(0.96, 0.89, 0.76), "roof": Color(0.78, 0.38, 0.3)},
-		{"type": "house", "cell": Vector2i(11, 3), "size": Vector2i(2, 2),
-			"walls": Color(0.93, 0.84, 0.7), "roof": Color(0.4, 0.55, 0.7)},
-		{"type": "house", "cell": Vector2i(3, 10), "size": Vector2i(2, 2),
-			"walls": Color(0.98, 0.92, 0.82), "roof": Color(0.55, 0.65, 0.4)},
-		{"type": "house", "cell": Vector2i(11, 10), "size": Vector2i(2, 2),
-			"walls": Color(0.9, 0.82, 0.72), "roof": Color(0.85, 0.6, 0.35)},
-		{"type": "well", "cell": Vector2i(9, 8), "size": Vector2i(1, 1)},
-		{"type": "notice_board", "cell": Vector2i(6, 6), "size": Vector2i(1, 1)},
-		{"type": "tree", "cell": Vector2i(1, 4), "size": Vector2i(1, 1)},
-		{"type": "tree", "cell": Vector2i(14, 4), "size": Vector2i(1, 1)},
-		{"type": "tree", "cell": Vector2i(1, 9), "size": Vector2i(1, 1)},
-		{"type": "tree", "cell": Vector2i(14, 9), "size": Vector2i(1, 1)},
-		{"type": "tree", "cell": Vector2i(5, 14), "size": Vector2i(1, 1)},
-		{"type": "tree", "cell": Vector2i(10, 14), "size": Vector2i(1, 1)},
-		{"type": "tree", "cell": Vector2i(6, 1), "size": Vector2i(1, 1)},
-		{"type": "tree", "cell": Vector2i(9, 1), "size": Vector2i(1, 1)},
-		{"type": "tree", "cell": Vector2i(13, 7), "size": Vector2i(1, 1)},
+		# Houses: 2 x 2 tiles, doors face the path in front of them.
+		{"type": "house", "cell": Vector2i(3, 3), "size": Vector2i(2, 2), "red_roof": true},
+		{"type": "house", "cell": Vector2i(11, 3), "size": Vector2i(2, 2), "wood": true},
+		{"type": "house", "cell": Vector2i(3, 10), "size": Vector2i(2, 2), "wood": true},
+		{"type": "house", "cell": Vector2i(11, 10), "size": Vector2i(2, 2), "red_roof": true},
+		{"type": "well", "cell": Vector2i(9, 8)},
+		{"type": "notice_board", "cell": Vector2i(6, 6)},
+		{"type": "tree", "cell": Vector2i(1, 4), "kind": "pine"},
+		{"type": "tree", "cell": Vector2i(14, 4), "kind": "round"},
+		{"type": "tree", "cell": Vector2i(1, 9), "kind": "bushy"},
+		{"type": "tree", "cell": Vector2i(14, 9), "kind": "pine"},
+		{"type": "tree", "cell": Vector2i(5, 14), "kind": "round"},
+		{"type": "tree", "cell": Vector2i(10, 14), "kind": "bushy"},
+		{"type": "tree", "cell": Vector2i(6, 1), "kind": "crooked"},
+		{"type": "tree", "cell": Vector2i(9, 1), "kind": "pine"},
+		{"type": "tree", "cell": Vector2i(13, 7), "kind": "bushy"},
 	]
 
 
@@ -153,31 +151,22 @@ func _place_props() -> void:
 	var props_root := Node3D.new()
 	props_root.name = "Props"
 	add_child(props_root)
-	var tree_leaves := [Color(0.36, 0.62, 0.33), Color(0.42, 0.68, 0.36), Color(0.5, 0.7, 0.38)]
 	var index := 0
 	for p in _prop_layout():
 		var cell: Vector2i = p["cell"]
-		var size: Vector2i = p["size"]
+		var size: Vector2i = p.get("size", Vector2i.ONE)
 		var prop_name := "%s_%d" % [p["type"], index]
+		index += 1
 		if not _claim_footprint(cell, size, prop_name):
 			continue
-		var node: Node3D
-		match p["type"]:
-			"house":
-				node = Props.house(p["walls"], p["roof"])
-			"tree":
-				node = Props.tree(tree_leaves[index % tree_leaves.size()])
-			"well":
-				node = Props.well()
-			"notice_board":
-				node = Props.notice_board()
-			_:
-				push_error("Unknown prop type: %s" % p["type"])
-				continue
+		var node := Props.build(p)
+		if node == null:
+			continue
 		node.name = prop_name
 		node.position = Grid.footprint_center(cell, size, map_size)
+		node.set_meta("cell", cell)
+		node.set_meta("size", size)
 		props_root.add_child(node)
-		index += 1
 
 
 ## Checks the footprint is fully on ground and not shared, then reserves it.
@@ -188,6 +177,9 @@ func _claim_footprint(cell: Vector2i, size: Vector2i, prop_name: String) -> bool
 			var c := cell + Vector2i(dx, dz)
 			if not is_ground(c):
 				push_error("%s at %s hangs off the island (tile %s)" % [prop_name, cell, c])
+				return false
+			if is_path(c):
+				push_error("%s at %s blocks the path (tile %s)" % [prop_name, cell, c])
 				return false
 			if occupied.has(c):
 				push_error("%s at %s overlaps %s (tile %s)" % [prop_name, cell, occupied[c], c])

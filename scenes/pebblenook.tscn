@@ -5,6 +5,7 @@
 [ext_resource type="PackedScene" path="res://scenes/player.tscn" id="3_player"]
 [ext_resource type="Script" path="res://scripts/clouds.gd" id="4_clouds"]
 [ext_resource type="Shader" path="res://shaders/tilt_shift.gdshader" id="5_tilt"]
+[ext_resource type="Script" path="res://scripts/debug_view.gd" id="6_debug"]
 
 [sub_resource type="ProceduralSkyMaterial" id="SkyMat_morning"]
 sky_top_color = Color(0.4, 0.63, 0.92, 1)
@@ -65,6 +66,11 @@ script = ExtResource("4_clouds")
 [node name="Camera" type="Camera3D" parent="."]
 script = ExtResource("2_camera")
 target_path = NodePath("../Player")
+
+[node name="DebugView" type="Node3D" parent="."]
+script = ExtResource("6_debug")
+island_path = NodePath("../Island")
+player_path = NodePath("../Player")
 
 [node name="TiltShift" type="CanvasLayer" parent="."]
 

@@ -1,0 +1,17 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/island.gd" id="1_island"]
+[ext_resource type="Script" path="res://scripts/follow_camera.gd" id="2_camera"]
+
+[node name="Pebblenook" type="Node3D"]
+
+[node name="Island" type="Node3D" parent="."]
+script = ExtResource("1_island")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-40, -30, 0)
+shadow_enabled = true
+
+[node name="Camera" type="Camera3D" parent="."]
+script = ExtResource("2_camera")
+distance = 44.0

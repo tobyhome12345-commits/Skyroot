@@ -5,7 +5,8 @@ extends SceneTree
 ##   pitch=<deg>      override camera pitch (e.g. pitch=15 to see the underside)
 ##   distance=<m>     override camera distance
 ##   debug            turn on the debug view (grid lines + collision shapes)
-##   frames=<n>       frames to wait before capturing (default 10)
+##   frames=<n>       frames to wait after setup before capturing (default 10)
+##   walk=<action>:<s> hold a move action (e.g. walk=move_down:1.5) first
 
 var wait_frames := 10
 
@@ -39,6 +40,13 @@ func _capture() -> void:
 				wait_frames = int(parts[1])
 	if camera and camera.has_method("snap_to_target"):
 		camera.snap_to_target()
+	# walk=<action>:<seconds> holds a movement key before capturing.
+	for arg in args.slice(1):
+		if arg.begins_with("walk="):
+			var walk := arg.substr(5).split(":")
+			Input.action_press(walk[0])
+			await create_timer(float(walk[1])).timeout
+			Input.action_release(walk[0])
 	for i in wait_frames:
 		await process_frame
 	await RenderingServer.frame_post_draw

@@ -30,6 +30,11 @@ const PATH_DEPTH := 0.05
 const PATH_TILE_SCALE := 0.5  # cave floor tiles are 4 m; half size = 1 tile
 ## Height of the Modular Cave "template-wall-half" cliff pieces.
 const CLIFF_HEIGHT := 4.05
+## How far the rock under the island sits behind the cliff faces on the rim.
+const ROCK_INSET := 0.03
+## How much cliff pieces are shortened at outer corners. Must differ from
+## ROCK_INSET, or the cliff's end would share a plane with the rock.
+const CORNER_TRIM := 0.05
 const GRASS_COLOR := Color(0.49, 0.72, 0.36)
 const PATH_COLOR := Color(0.83, 0.71, 0.5)
 const DIRT_COLOR := Color(0.72, 0.46, 0.32)
@@ -270,8 +275,26 @@ func _build_cliffs() -> void:
 			var pos := Grid.cell_center(cell, map_size) + edge + Vector3(0.0, -GRASS_THICKNESS - CLIFF_HEIGHT, 0.0)
 			var wall := ModelLib.piece(ModelLib.CAVE + "template-wall-half.glb", 1.0, pos, sides[dir])
 			wall.name = "cliff_%d_%d_%d_%d" % [cell.x, cell.y, dir.x, dir.y]
+			_trim_corner_ends(wall, cell, dir)
 			ModelLib.set_atlas(wall, stone_atlas)
 			cliffs.add_child(wall)
+
+
+## On an outer corner two cliffs meet at a right angle, and the end of one
+## would lie in the same plane as the face of the other (flicker). Trim the
+## piece by CORNER_TRIM at any end that sits on an outer corner.
+func _trim_corner_ends(wall: Node3D, cell: Vector2i, dir: Vector2i) -> void:
+	# The piece runs along its local x axis from -1 to +1 (one tile).
+	var along := wall.basis.x.normalized()
+	var along_cell := Vector2i(roundi(along.x), roundi(along.z))
+	var lo := -Grid.TILE / 2.0
+	var hi := Grid.TILE / 2.0
+	if not is_ground(cell + along_cell):
+		hi -= CORNER_TRIM
+	if not is_ground(cell - along_cell):
+		lo += CORNER_TRIM
+	wall.scale.x = (hi - lo) / Grid.TILE
+	wall.position += along * ((lo + hi) / 2.0)
 
 
 ## Dirt-and-stone floor tiles from the Modular Cave pack on every path tile,
@@ -302,15 +325,29 @@ func _build_ground() -> void:
 		top_color = top_color.darkened(_cell_noise(cell, 1) * 0.06)
 		var side_color := DIRT_COLOR
 		var top := -PATH_DEPTH if is_path(cell) else 0.0
+		# No bottom face: the rock column always sits right under it.
 		MeshUtil.add_box(st, Vector3(c.x - half, -GRASS_THICKNESS, c.z - half),
-				Vector3(c.x + half, top, c.z + half), top_color, side_color)
+				Vector3(c.x + half, top, c.z + half), top_color, side_color, true, false)
 		# Rock column hanging below. Deeper towards the middle, in whole tiles.
 		# At least 2 tiles deep so the 4 m cliff walls on the rim have rock behind them.
 		var depth_tiles := maxi(2, _edge_distance(cell) + int(_cell_noise(cell, 2) * 2.0))
 		var bottom := -GRASS_THICKNESS - float(depth_tiles) * Grid.TILE
 		var rock := ROCK_COLOR.darkened(_cell_noise(cell, 3) * 0.15)
-		MeshUtil.add_box(st, Vector3(c.x - half, bottom, c.z - half),
-				Vector3(c.x + half, -GRASS_THICKNESS, c.z + half), rock, rock)
+		# On outer edges the rock sits ROCK_INSET behind the cliff walls, so the
+		# two surfaces never share a plane (that would flicker / z-fight).
+		var lo := Vector3(c.x - half, bottom, c.z - half)
+		var hi := Vector3(c.x + half, -GRASS_THICKNESS, c.z + half)
+		if not is_ground(cell + Vector2i(-1, 0)):
+			lo.x += ROCK_INSET
+		if not is_ground(cell + Vector2i(1, 0)):
+			hi.x -= ROCK_INSET
+		if not is_ground(cell + Vector2i(0, -1)):
+			lo.z += ROCK_INSET
+		if not is_ground(cell + Vector2i(0, 1)):
+			hi.z -= ROCK_INSET
+		# No top face: the grass slab sits exactly on it, so it can't be seen
+		# and would only double up with the cliff tops at the same height.
+		MeshUtil.add_box(st, lo, hi, rock, rock, false)
 	st.generate_tangents()
 	var mesh_instance := MeshInstance3D.new()
 	mesh_instance.name = "Ground"

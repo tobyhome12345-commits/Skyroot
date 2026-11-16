@@ -249,8 +249,75 @@ func _check_ground() -> void:
 			if not _island.is_ground(c + d):
 				edge_faces += 1
 	_expect(cliff_count == edge_faces, "every outer edge has a cliff wall (%d / %d)" % [cliff_count, edge_faces])
+	_check_coplanar(mesh)
 	var mesh_box := mesh.get_aabb()
 	_expect(mesh_box.position.y < -Grid.TILE, "rocky underside hangs below the island (bottom y=%.1f)" % mesh_box.position.y)
+
+
+## Two visible surfaces in the same plane flicker (z-fighting). Every
+## outside-facing triangle of the cliffs is compared against the ground mesh
+## and against the other cliffs; any pair that lies in the same plane (within
+## 2 mm), faces the same way and overlaps is reported.
+func _check_coplanar(ground_mesh: Mesh) -> void:
+	var buckets := {}  # Vector3i(axis, facing, plane_mm) -> Array of [source, Rect2]
+	_add_faces(buckets, "ground", ground_mesh, Transform3D.IDENTITY)
+	for w in _island.get_node("Cliffs").get_children():
+		for mi in (w as Node).find_children("*", "MeshInstance3D", true, false):
+			var m := mi as MeshInstance3D
+			_add_faces(buckets, String(w.name), m.mesh, ModelUtil._relative_transform(_island, m))
+	var clashes := 0
+	var examples: Array[String] = []
+	for key: Vector3i in buckets:
+		var here: Array = buckets[key]
+		var next: Array = buckets.get(key + Vector3i(0, 0, 1), [])
+		for i in here.size():
+			var others: Array = here.slice(i + 1) + next
+			for b: Array in others:
+				var a: Array = here[i]
+				if a[0] == b[0] or (a[0] == "ground" and b[0] == "ground"):
+					continue
+				if (a[1] as Rect2).intersection(b[1] as Rect2).get_area() > 0.0004:
+					clashes += 1
+					if examples.size() < 3:
+						examples.append("%s vs %s (axis %d, plane %.3f m)" % [a[0], b[0], key.x, key.z / 500.0])
+	_expect(clashes == 0, "no flickering overlaps between cliffs and rock (%d found%s)" % [clashes, (": " + ", ".join(examples)) if clashes > 0 else ""])
+
+
+## True if `p` lies (within 5 cm) on a tile edge between a ground tile and sky.
+func _on_outer_edge(p: Vector3, axis: int) -> bool:
+	var step := Vector3.ZERO
+	step[axis] = 0.05
+	var inside: bool = _island.is_ground(Grid.world_to_cell(p - step, _island.map_size))
+	var outside: bool = _island.is_ground(Grid.world_to_cell(p + step, _island.map_size))
+	return inside != outside
+
+
+## Adds every axis-aligned triangle to a bucket keyed by its axis, which way
+## it faces, and its plane position in 2 mm steps.
+func _add_faces(buckets: Dictionary, source: String, mesh: Mesh, xf: Transform3D) -> void:
+	var faces := mesh.get_faces()
+	for i in range(0, faces.size(), 3):
+		var a := xf * faces[i]
+		var b := xf * faces[i + 1]
+		var c := xf * faces[i + 2]
+		var n := (b - a).cross(c - a)
+		if n.length() < 1e-6:
+			continue
+		n = n.normalized()
+		var axis := n.abs().max_axis_index()
+		if absf(n[axis]) < 0.999:
+			continue
+		# Only the island's outside walls can be seen: a vertical face counts
+		# when it lies on a tile edge with ground on one side and sky on the other.
+		if axis == 1 or not _on_outer_edge((a + b + c) / 3.0, axis):
+			continue
+		var u := (axis + 1) % 3
+		var v := (axis + 2) % 3
+		var rect := Rect2(Vector2(a[u], a[v]), Vector2.ZERO).expand(Vector2(b[u], b[v])).expand(Vector2(c[u], c[v]))
+		var key := Vector3i(axis, 1 if n[axis] > 0.0 else -1, roundi(a[axis] * 500.0))
+		if not buckets.has(key):
+			buckets[key] = []
+		buckets[key].append([source, rect])
 
 
 # ---------------------------------------------------------------- player

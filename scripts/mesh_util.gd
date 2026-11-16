@@ -3,8 +3,9 @@ class_name MeshUtil
 
 
 ## Adds an axis-aligned box from `lo` to `hi`. The top face gets `top_color`,
-## the other five faces get `side_color`.
-static func add_box(st: SurfaceTool, lo: Vector3, hi: Vector3, top_color: Color, side_color: Color) -> void:
+## the other five faces get `side_color`. `with_top` / `with_bottom = false`
+## leave that face out (for faces that are always covered by something else).
+static func add_box(st: SurfaceTool, lo: Vector3, hi: Vector3, top_color: Color, side_color: Color, with_top := true, with_bottom := true) -> void:
 	var p := [
 		Vector3(lo.x, lo.y, lo.z), Vector3(hi.x, lo.y, lo.z),
 		Vector3(hi.x, lo.y, hi.z), Vector3(lo.x, lo.y, hi.z),
@@ -12,8 +13,10 @@ static func add_box(st: SurfaceTool, lo: Vector3, hi: Vector3, top_color: Color,
 		Vector3(hi.x, hi.y, hi.z), Vector3(lo.x, hi.y, hi.z),
 	]
 	# Each face: 4 corner indices (counter-clockwise seen from outside), normal.
-	_quad(st, p[4], p[5], p[6], p[7], Vector3.UP, top_color)
-	_quad(st, p[3], p[2], p[1], p[0], Vector3.DOWN, side_color)
+	if with_top:
+		_quad(st, p[4], p[5], p[6], p[7], Vector3.UP, top_color)
+	if with_bottom:
+		_quad(st, p[3], p[2], p[1], p[0], Vector3.DOWN, side_color)
 	_quad(st, p[7], p[6], p[2], p[3], Vector3.BACK, side_color)
 	_quad(st, p[5], p[4], p[0], p[1], Vector3.FORWARD, side_color)
 	_quad(st, p[6], p[5], p[1], p[2], Vector3.RIGHT, side_color)

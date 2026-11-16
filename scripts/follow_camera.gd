@@ -10,11 +10,15 @@ extends Camera3D
 ## Higher = snappier follow.
 @export var follow_speed := 4.0
 
+## Only used by the screenshot tool for check views; the game keeps yaw 0
+## and no focus override.
+var yaw_degrees := 0.0
+var focus_override: Variant = null  # Vector3 or null
+
 var _target: Node3D
 
 
 func _ready() -> void:
-	rotation_degrees = Vector3(-pitch_degrees, 0.0, 0.0)
 	if not target_path.is_empty():
 		_target = get_node_or_null(target_path) as Node3D
 	snap_to_target()
@@ -22,6 +26,7 @@ func _ready() -> void:
 
 ## Jump straight to the follow position (used at start, no swoop).
 func snap_to_target() -> void:
+	rotation_degrees = Vector3(-pitch_degrees, yaw_degrees, 0.0)
 	global_position = _desired_position()
 
 
@@ -31,6 +36,11 @@ func _process(delta: float) -> void:
 
 
 func _desired_position() -> Vector3:
-	var focus := _target.global_position if _target else Vector3.ZERO
+	var focus: Vector3 = Vector3.ZERO
+	if focus_override != null:
+		focus = focus_override
+	elif _target:
+		focus = _target.global_position
 	var pitch := deg_to_rad(pitch_degrees)
-	return focus + Vector3(0.0, sin(pitch), cos(pitch)) * distance
+	var back := Vector3(0.0, sin(pitch), cos(pitch)).rotated(Vector3.UP, deg_to_rad(yaw_degrees))
+	return focus + back * distance

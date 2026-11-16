@@ -4,6 +4,8 @@ extends SceneTree
 ## Options (for checking, not gameplay):
 ##   pitch=<deg>      override camera pitch (e.g. pitch=15 to see the underside)
 ##   distance=<m>     override camera distance
+##   yaw=<deg>        orbit the camera around its focus (check views only)
+##   focus=<x>,<z>    look at that tile instead of the player (close-ups)
 ##   debug            turn on the debug view (grid lines + collision shapes)
 ##   notilt           hide the tilt-shift blur (to compare)
 ##   frames=<n>       frames to wait after setup before capturing (default 10)
@@ -31,7 +33,16 @@ func _capture() -> void:
 			"pitch":
 				if camera and "pitch_degrees" in camera:
 					camera.pitch_degrees = float(parts[1])
-					camera.rotation_degrees.x = -float(parts[1])
+			"yaw":
+				if camera and "yaw_degrees" in camera:
+					camera.yaw_degrees = float(parts[1])
+			"focus":
+				# focus=<tile x>,<tile z>: look at that tile instead of the player.
+				var xz := parts[1].split(",")
+				var island := root.find_child("Island", true, false)
+				if camera and island:
+					var cell := Vector2i(int(xz[0]), int(xz[1]))
+					camera.focus_override = Grid.cell_center(cell, island.map_size)
 			"distance":
 				if camera and "distance" in camera:
 					camera.distance = float(parts[1])

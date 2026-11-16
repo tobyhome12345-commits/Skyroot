@@ -2,11 +2,15 @@
 
 [ext_resource type="Script" path="res://scripts/island.gd" id="1_island"]
 [ext_resource type="Script" path="res://scripts/follow_camera.gd" id="2_camera"]
+[ext_resource type="PackedScene" path="res://scenes/player.tscn" id="3_player"]
 
 [node name="Pebblenook" type="Node3D"]
 
 [node name="Island" type="Node3D" parent="."]
 script = ExtResource("1_island")
+player_path = NodePath("../Player")
+
+[node name="Player" parent="." instance=ExtResource("3_player")]
 
 [node name="Sun" type="DirectionalLight3D" parent="."]
 rotation_degrees = Vector3(-40, -30, 0)
@@ -14,4 +18,4 @@ shadow_enabled = true
 
 [node name="Camera" type="Camera3D" parent="."]
 script = ExtResource("2_camera")
-distance = 44.0
+target_path = NodePath("../Player")

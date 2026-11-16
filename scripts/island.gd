@@ -28,6 +28,13 @@ const PATH_COLOR := Color(0.83, 0.71, 0.5)
 const DIRT_COLOR := Color(0.55, 0.4, 0.28)
 const ROCK_COLOR := Color(0.52, 0.47, 0.45)
 
+## Tile the player starts on.
+@export var start_cell := Vector2i(7, 8)
+@export var player_path: NodePath
+
+## Height of the invisible walls around the island edge.
+const EDGE_WALL_HEIGHT := 4.0
+
 var map_size := Vector2i(16, 16)
 ## Tiles taken by props (cell -> prop name). Used to stop overlaps.
 var occupied := {}
@@ -61,7 +68,46 @@ func _prop_layout() -> Array[Dictionary]:
 func _ready() -> void:
 	map_size = Vector2i(MAP[0].length(), MAP.size())
 	_build_ground()
+	_build_edge_walls()
 	_place_props()
+	_spawn_player()
+
+
+func _spawn_player() -> void:
+	var player := get_node_or_null(player_path)
+	if player == null:
+		return
+	if not is_free(start_cell):
+		push_error("Player start tile %s is not free ground" % start_cell)
+		return
+	player.spawn_at(Grid.cell_center(start_cell, map_size))
+
+
+## Invisible walls on every empty tile that touches the island, so the
+## player can never walk off the edge.
+func _build_edge_walls() -> void:
+	var body := StaticBody3D.new()
+	body.name = "EdgeWalls"
+	add_child(body)
+	for z in range(-1, map_size.y + 1):
+		for x in range(-1, map_size.x + 1):
+			var cell := Vector2i(x, z)
+			if is_ground(cell) or not _touches_ground(cell):
+				continue
+			var shape := CollisionShape3D.new()
+			var box := BoxShape3D.new()
+			box.size = Vector3(Grid.TILE, EDGE_WALL_HEIGHT, Grid.TILE)
+			shape.shape = box
+			shape.position = Grid.cell_center(cell, map_size) + Vector3(0.0, EDGE_WALL_HEIGHT / 2.0, 0.0)
+			body.add_child(shape)
+
+
+func _touches_ground(cell: Vector2i) -> bool:
+	for dz in range(-1, 2):
+		for dx in range(-1, 2):
+			if is_ground(cell + Vector2i(dx, dz)):
+				return true
+	return false
 
 
 # ---------------------------------------------------------------- map helpers

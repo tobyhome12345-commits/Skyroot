@@ -8,6 +8,16 @@ const PLATFORMER := "res://Assets/Platformer Kit/Models/GLB format/"
 const FOREST := "res://Assets/Mini Forest/Models/GLB format/"
 const SURVIVAL := "res://Assets/Survival Kit/Models/GLB format/"
 const CHARACTERS := "res://Assets/Mini Characters/Models/GLB format/"
+const FURNITURE := "res://Assets/Furniture Kit/Models/GLTF format/"
+
+## Fixed scales that keep every pack at the same world size as the island
+## (Furniture Kit: 1 unit = one tile, like the Town houses; Survival Kit items
+## are modelled smaller, so they need 3x to stand next to furniture).
+const PACK_SCALE := {"F": 2.0, "T": 2.0, "S": 3.0, "P": 2.0, "C": 1.0}
+const PACK_PATH := {
+	"F": FURNITURE, "T": TOWN, "S": SURVIVAL, "P": PLATFORMER,
+	"C": "res://Assets/Modular Cave/Models/GLB format/",
+}
 
 ## Fantasy Town Kit pieces are 1 unit modules; 2x makes one module = one tile.
 const TOWN_SCALE := 2.0
@@ -116,6 +126,30 @@ static func fitted(path: String, footprint: Vector2, fill := 0.85, max_height :=
 	var centre := box.get_center()
 	model.position = Vector3(-centre.x, -box.position.y, -centre.z)
 	return holder
+
+
+## Path and scale for a short model id like "F:bedSingle" (pack letter: F
+## Furniture Kit, T Town, S Survival, P Platformer, C Modular Cave).
+static func resolve(id: String) -> Array:
+	var parts := id.split(":")
+	return [PACK_PATH[parts[0]] + parts[1] + ".glb", PACK_SCALE[parts[0]]]
+
+
+## A model at its pack's fixed scale, turned by `rot_y_degrees`, wrapped in
+## a holder so that its bounding box is centred on the holder's origin in
+## x/z and its lowest point is at y = 0. Returns [holder, size].
+static func placed(id: String, rot_y_degrees := 0.0, scale_mult := 1.0) -> Array:
+	var r := resolve(id)
+	var holder := Node3D.new()
+	holder.name = (r[0] as String).get_file().get_basename()
+	var model := instance(r[0])
+	model.scale = Vector3.ONE * float(r[1]) * scale_mult
+	model.rotation_degrees.y = rot_y_degrees
+	holder.add_child(model)
+	var box := ModelUtil.aabb_in(model, holder)
+	var centre := box.get_center()
+	model.position = Vector3(-centre.x, -box.position.y, -centre.z)
+	return [holder, box.size]
 
 
 ## Swaps the colour atlas on every mesh (Kenney models share one atlas, so

@@ -10,12 +10,16 @@ extends SceneTree
 ##   notilt           hide the tilt-shift blur (to compare)
 ##   frames=<n>       frames to wait after setup before capturing (default 10)
 ##   walk=<action>:<s> hold a move action (e.g. walk=move_down:1.5) first
+##   scene=<res path> capture that scene instead of the main scene (e.g. an interior)
 
 var wait_frames := 10
 
 
 func _initialize() -> void:
 	var main_path: String = ProjectSettings.get_setting("application/run/main_scene", "")
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("scene="):
+			main_path = arg.substr(6)
 	if main_path != "":
 		var scene: PackedScene = load(main_path)
 		if scene:
@@ -40,6 +44,8 @@ func _capture() -> void:
 				# focus=<tile x>,<tile z>: look at that tile instead of the player.
 				var xz := parts[1].split(",")
 				var island := root.find_child("Island", true, false)
+				if island == null:
+					island = root.find_child("Interior", true, false)
 				if camera and island:
 					var cell := Vector2i(int(xz[0]), int(xz[1]))
 					camera.focus_override = Grid.cell_center(cell, island.map_size)

@@ -15,6 +15,7 @@ var _spawn_position := Vector3.ZERO
 
 
 func _ready() -> void:
+	add_to_group("player")
 	_setup_input()
 	_spawn_position = global_position
 	if _anim:
@@ -26,6 +27,8 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	var input := Input.get_vector("move_left", "move_right", "move_up", "move_down")
+	if Game.input_locked:
+		input = Vector2.ZERO  # no moving while the screen fades
 	var direction := Vector3(input.x, 0.0, input.y)
 	var target := direction * speed
 	velocity.x = move_toward(velocity.x, target.x, acceleration * delta)
@@ -53,11 +56,16 @@ func _play(anim_name: String) -> void:
 		_anim.play(anim_name, 0.15)
 
 
-## Places the player on a tile (called by the island at start).
-func spawn_at(pos: Vector3) -> void:
+## Places the player on a tile (called by the island / interior at start).
+## `facing` is a yaw in radians (0 = towards the camera).
+func spawn_at(pos: Vector3, facing := 0.0) -> void:
 	global_position = pos
 	_spawn_position = pos
 	velocity = Vector3.ZERO
+	if _visual:
+		_visual.rotation.y = facing
+	else:
+		$Visual.rotation.y = facing
 
 
 static func _setup_input() -> void:

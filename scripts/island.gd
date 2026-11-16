@@ -57,10 +57,15 @@ var occupied := {}
 func _prop_layout() -> Array[Dictionary]:
 	return [
 		# Houses: 2 x 2 tiles, doors face the path in front of them.
-		{"type": "house", "cell": Vector2i(3, 3), "size": Vector2i(2, 2), "red_roof": true},
-		{"type": "house", "cell": Vector2i(11, 3), "size": Vector2i(2, 2), "wood": true},
-		{"type": "house", "cell": Vector2i(3, 10), "size": Vector2i(2, 2), "wood": true},
-		{"type": "house", "cell": Vector2i(11, 10), "size": Vector2i(2, 2), "red_roof": true},
+		# Each house leads to its own interior scene.
+		{"type": "house", "cell": Vector2i(3, 3), "size": Vector2i(2, 2), "red_roof": true,
+			"interior": "res://scenes/interiors/elder_home.tscn"},
+		{"type": "house", "cell": Vector2i(11, 3), "size": Vector2i(2, 2), "wood": true,
+			"interior": "res://scenes/interiors/bedroom.tscn"},
+		{"type": "house", "cell": Vector2i(3, 10), "size": Vector2i(2, 2), "wood": true,
+			"interior": "res://scenes/interiors/workshop.tscn"},
+		{"type": "house", "cell": Vector2i(11, 10), "size": Vector2i(2, 2), "red_roof": true,
+			"interior": "res://scenes/interiors/library.tscn"},
 		{"type": "well", "cell": Vector2i(9, 8)},
 		{"type": "notice_board", "cell": Vector2i(6, 6)},
 		{"type": "tree", "cell": Vector2i(1, 4), "kind": "pine"},
@@ -124,6 +129,7 @@ func _ready() -> void:
 	_build_ground()
 	_build_edge_walls()
 	_place_props()
+	_build_doors()
 	_spawn_player()
 
 
@@ -131,10 +137,38 @@ func _spawn_player() -> void:
 	var player := get_node_or_null(player_path)
 	if player == null:
 		return
-	if not is_free(start_cell):
-		push_error("Player start tile %s is not free ground" % start_cell)
+	# Coming back out of a house: appear in front of its door.
+	var spawn := Game.take_spawn()
+	var cell: Vector2i = spawn.get("cell", start_cell)
+	if not is_ground(cell) or occupied.has(cell):
+		push_error("Player start tile %s is not free ground" % cell)
 		return
-	player.spawn_at(Grid.cell_center(start_cell, map_size))
+	player.spawn_at(Grid.cell_center(cell, map_size), spawn.get("facing", 0.0))
+
+
+## The tile in front of a house's door (the door is in its front-left module).
+func door_front_cell(house_cell: Vector2i, house_size: Vector2i) -> Vector2i:
+	return house_cell + Vector2i(0, house_size.y)
+
+
+## A door trigger on the tile in front of every house door.
+func _build_doors() -> void:
+	var doors := Node3D.new()
+	doors.name = "Doors"
+	add_child(doors)
+	for p in _prop_layout():
+		if not p.has("interior"):
+			continue
+		var front := door_front_cell(p["cell"], p["size"])
+		var door := Area3D.new()
+		door.set_script(preload("res://scripts/door_trigger.gd"))
+		door.name = "door_%d_%d" % [front.x, front.y]
+		door.set_meta("cell", front)
+		door.set_meta("interior", p["interior"])
+		doors.add_child(door)
+		# Prompt floats above the door, which is on the tile edge behind.
+		door.setup(Grid.cell_center(front, map_size), Vector3(0.0, 2.6, -Grid.TILE / 2.0),
+				Game.enter_house.bind(p["interior"], front))
 
 
 ## Invisible walls on every empty tile that touches the island, so the

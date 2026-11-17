@@ -11,6 +11,9 @@ const P := ModelLib.PLATFORMER
 const F := ModelLib.FOREST
 const S := ModelLib.SURVIVAL
 const FOOT_1 := Vector2(2.0, 2.0)  # one tile in metres
+## Lit room shell inside each house (see _add_lit_interior).
+const INTERIOR_HALF := 1.6
+const INTERIOR_HEIGHT := 1.95
 
 
 ## Builds a prop from a layout entry (see island.gd).
@@ -85,9 +88,33 @@ static func house(red_roof: bool, wood: bool) -> Node3D:
 		if red_roof:
 			ModelLib.set_atlas(roof_l, ModelLib.red_roof_atlas())
 			ModelLib.set_atlas(roof_r, ModelLib.red_roof_atlas())
+	_add_lit_interior(model)
 	# Walls stand exactly on the footprint edges: 4 x 4 m, 2 m tall.
 	_box_collider(root, Vector3(2.0 * k, k, 2.0 * k), Vector3(0.0, k / 2.0, 0.0))
 	return root
+
+
+## The Town Kit walls have open windows and door frames, and the house is a
+## hollow shell, so without this you'd see the grass inside. A warm, softly
+## glowing room shell just inside the walls makes the windows look lit.
+## It stays inside the window shutters (which reach 1.65 m from the centre)
+## and under the roof, so it never pokes through or clips.
+static func _add_lit_interior(model: Node3D) -> void:
+	var shell := MeshInstance3D.new()
+	shell.name = "LitInterior"
+	var box := BoxMesh.new()
+	box.size = Vector3(INTERIOR_HALF * 2.0, INTERIOR_HEIGHT, INTERIOR_HALF * 2.0)
+	shell.mesh = box
+	shell.position = Vector3(0.0, INTERIOR_HEIGHT / 2.0, 0.0)
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.36, 0.22, 0.14)
+	mat.emission_enabled = true
+	mat.emission = Color(1.0, 0.7, 0.4)
+	mat.emission_energy_multiplier = 0.55
+	mat.roughness = 1.0
+	shell.material_override = mat
+	shell.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	model.add_child(shell)
 
 
 static func tree(kind: String) -> Node3D:

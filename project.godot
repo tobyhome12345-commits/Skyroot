@@ -19,6 +19,7 @@ config/icon="res://icon.svg"
 
 WindowControls="*res://scripts/window_controls.gd"
 Game="*res://scripts/game.gd"
+DialogueBox="*res://scripts/dialogue_box.gd"
 
 [display]
 

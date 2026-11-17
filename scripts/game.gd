@@ -46,6 +46,19 @@ func exit_house() -> void:
 	_travel(OUTSIDE_SCENE, {"cell": return_cell, "facing": 0.0})
 
 
+## Which conversation each villager shows next (villager id -> index).
+## Kept here so it survives going in and out of houses.
+var _conversation_index := {}
+
+
+## Returns the conversation to show for this villager and moves on to the
+## next one for next time (cycling round).
+func next_conversation(villager_id: String, count: int) -> int:
+	var i: int = _conversation_index.get(villager_id, 0) % maxi(count, 1)
+	_conversation_index[villager_id] = i + 1
+	return i
+
+
 ## Takes (and clears) the spawn request for the scene that just loaded.
 func take_spawn() -> Dictionary:
 	var s := pending_spawn

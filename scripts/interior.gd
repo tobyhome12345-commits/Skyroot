@@ -38,6 +38,7 @@ func _ready() -> void:
 	_build_walls(data)
 	_build_exit()
 	_build_objects(data)
+	_place_villager(data)
 	_spawn_player()
 
 
@@ -60,6 +61,7 @@ func _rooms() -> Dictionary:
 	return {
 		# 1. The elder's home: cozy living room and kitchen.
 		"elder": {
+			"villager": {"id": "elder", "cell": Vector2i(4, 4), "facing": 0.0},
 			"wall": "wall", "windows": [Vector2i(3, 0), Vector2i(0, 4), Vector2i(5, 1)],
 			"objects": [
 				{"row": [["F:kitchenFridge", 0.0, []], ["F:kitchenCabinet", 0.0, [["F:kitchenCoffeeMachine", 0.0]]],
@@ -84,6 +86,7 @@ func _rooms() -> Dictionary:
 		},
 		# 2. A young villager's bedroom.
 		"bedroom": {
+			"villager": {"id": "pip", "cell": Vector2i(4, 2), "facing": -30.0},
 			"wall": "wall-wood", "windows": [Vector2i(2, 0), Vector2i(5, 3)],
 			"objects": [
 				{"id": "F:bedSingle", "cell": Vector2i(0, 0), "size": Vector2i(2, 2), "against": ["north", "west"],
@@ -106,6 +109,7 @@ func _rooms() -> Dictionary:
 		},
 		# 3. The tinkerer's workshop.
 		"workshop": {
+			"villager": {"id": "wren", "cell": Vector2i(1, 1), "facing": 20.0},
 			"wall": "wall-wood", "windows": [Vector2i(0, 2), Vector2i(5, 3)],
 			"objects": [
 				{"row": [["F:lampSquareFloor", 0.0, []], ["S:workbench", 0.0, [["S:tool-hammer", 30.0]]],
@@ -128,6 +132,7 @@ func _rooms() -> Dictionary:
 		},
 		# 4. A study / library with a fireplace.
 		"library": {
+			"villager": {"id": "quill", "cell": Vector2i(1, 1), "facing": 20.0},
 			"wall": "wall", "windows": [Vector2i(0, 4), Vector2i(5, 4)],
 			"objects": [
 				{"row": [["F:bookcaseClosed", 0.0, []], ["F:bookcaseOpen", 0.0, [["F:books", 0.0]]]],
@@ -534,6 +539,24 @@ func _collider_from_model(root: Node3D) -> void:
 	cs.position = box.get_center()
 	root.get_node("Body").add_child(cs)
 	root.set_meta("solid", true)
+
+
+## The room's villager stands on their own tile (claimed like furniture, so
+## they never share a tile or stand on the entrance / exit).
+func _place_villager(data: Dictionary) -> void:
+	var root := Node3D.new()
+	root.name = "Villagers"
+	add_child(root)
+	if not data.has("villager"):
+		return
+	var v: Dictionary = data["villager"]
+	var cell: Vector2i = v["cell"]
+	if not _claim(cell, Vector2i.ONE, "villager_" + v["id"]):
+		return
+	var villager := Villager.create(v["id"], cell_center(cell), v.get("facing", 0.0))
+	if villager:
+		villager.set_meta("cell", cell)
+		root.add_child(villager)
 
 
 func _spawn_player() -> void:

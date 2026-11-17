@@ -130,7 +130,32 @@ func _ready() -> void:
 	_build_edge_walls()
 	_place_props()
 	_build_doors()
+	_place_villagers()
 	_spawn_player()
+
+
+## Villagers outside: id (data/dialogue/<id>.json), tile, which way they face.
+func _villager_layout() -> Array[Dictionary]:
+	return [
+		# Fennel tends the trees and plants on the west side.
+		{"id": "fennel", "cell": Vector2i(2, 8), "facing": 90.0},
+		# Juniper reads the notice board.
+		{"id": "juniper", "cell": Vector2i(5, 6), "facing": 0.0},
+	]
+
+
+func _place_villagers() -> void:
+	var root := Node3D.new()
+	root.name = "Villagers"
+	add_child(root)
+	for v in _villager_layout():
+		var cell: Vector2i = v["cell"]
+		if not _claim_footprint(cell, Vector2i.ONE, "villager_" + v["id"]):
+			continue
+		var villager := Villager.create(v["id"], Grid.cell_center(cell, map_size), v.get("facing", 0.0))
+		if villager:
+			villager.set_meta("cell", cell)
+			root.add_child(villager)
 
 
 func _spawn_player() -> void:

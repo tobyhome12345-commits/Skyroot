@@ -43,7 +43,7 @@ func _prop_layout() -> Array[Dictionary]:
 		{"type": "crate", "cell": Vector2i(7, 4), "rot": 25.0},
 		{"type": "mushrooms", "cell": Vector2i(4, 7)},
 		{"type": "grass", "cell": Vector2i(4, 2)},
-		{"type": "grass", "cell": Vector2i(7, 8), "rot": 60.0},
+		{"type": "grass", "cell": Vector2i(4, 8), "rot": 60.0},
 	]
 
 

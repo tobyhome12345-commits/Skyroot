@@ -93,7 +93,7 @@ func _prop_layout() -> Array[Dictionary]:
 		{"type": "tree", "cell": Vector2i(1, 4), "kind": "pine"},
 		{"type": "tree", "cell": Vector2i(14, 4), "kind": "round"},
 		{"type": "tree", "cell": Vector2i(1, 9), "kind": "bushy"},
-		{"type": "tree", "cell": Vector2i(14, 9), "kind": "pine"},
+		{"type": "tree", "cell": Vector2i(15, 10), "kind": "pine"},
 		{"type": "tree", "cell": Vector2i(5, 14), "kind": "round"},
 		{"type": "tree", "cell": Vector2i(10, 14), "kind": "bushy"},
 		{"type": "tree", "cell": Vector2i(6, 1), "kind": "crooked"},

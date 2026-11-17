@@ -10,7 +10,7 @@ Credit isn't required, but it's given here gladly. Thank you, Kenney!
 | Pack (version) | Folder | Used for | Source | Licence |
 |---|---|---|---|---|
 | Fantasy Town Kit (2.0) | `Assets/Houses/` | House walls, doors, windows and roofs; pine and round trees; lanterns; back fence; rocks; cart; well parts (stone basin, wooden posts, pointed roof); notice board parts (posts, plank board, roof); interior walls, floor boards, and the stone chimney of the library fireplace | kenney.nl | CC0 |
-| Platformer Kit (4.1) | `Assets/Platformer Kit/` | Bushy round trees, flowers, tall flowers, grass tufts, mushrooms | kenney.nl | CC0 |
+| Platformer Kit (4.1) | `Assets/Platformer Kit/` | Bushy round trees, flowers, tall flowers, grass tufts, mushrooms; the wooden launch ramp (`platform-ramp`) | kenney.nl | CC0 |
 | Mini Forest (1.0) | `Assets/Mini Forest/` | Small leafy plants; Fennel the Gardener (`character-archer`) | kenney.nl | CC0 |
 | Survival Kit (2.0) | `Assets/Survival Kit/` | Barrels, crates, the well's bucket; workshop workbenches, anvil, grinder, tools, chest and bottles; the fire pit in the library fireplace | kenney.nl | CC0 |
 | Furniture Kit (2.0) | `Assets/Furniture Kit/` | All house-interior furniture: kitchen, beds, desks, chairs, sofas, tables, bookcases, lamps, rugs, plants, books, radio, laptop, teddy bear, the floor base and the exit doorways | kenney.nl | CC0 |
@@ -24,6 +24,8 @@ All CC0, from kenney.nl: Nature Kit (2.1), Hexagon Kit (2.0), Mini Arena (1.1),
 Food Kit (2.0).
 
 ## Notes
+
+- The glider in the glide cutscene is built in code from simple shapes (`scripts/glider.gd`), not taken from a pack.
 
 - Only the GLB/GLTF versions of the models are imported. The other formats
   (FBX, OBJ, DAE, STL) and preview images are skipped by Godot via `.gdignore` files.

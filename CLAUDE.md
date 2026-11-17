@@ -18,7 +18,9 @@ The Godot console exe is:
   Once a main scene exists, also run it briefly: `godot_console --headless --path . --quit-after 60`
   Read the output; fix any `SCRIPT ERROR` / `ERROR` / `Parse Error` lines before moving on.
 - Gameplay test (movement, blocking, F3 debug): `godot_console --headless --path . --script res://tools/test_movement.gd` — must print `RESULT: ALL PASSED`.
-- Fit check (tiles, flush on ground, overlaps, colliders, gaps): `godot_console --headless --path . --script res://tools/check_fit.gd` must print `RESULT: ALL PASSED`. Run it after any change to props or models.
+- Fit check (both islands: tiles, flush on ground, overlaps, colliders, gaps): `godot_console --headless --path . --script res://tools/check_fit.gd` must print `RESULT: ALL PASSED`. Run it after any change to props or models.
+- Launch check (both islands: shared tiles, launch point on an edge facing sky, landing tile free and reachable, nothing cut off): `godot_console --headless --path . --script res://tools/check_islands.gd`
+- Travel test (launch prompt, menu, full glide cutscene, Esc / Space skip, landing, game state across trips): `godot_console --headless --path . --script res://tools/test_travel.gd`
 - Interior check (all 4 house interiors: tiles, flush stacking, overlaps, walls, colliders, floor, entrance→exit path, physics walk): `godot_console --headless --path . --script res://tools/check_interiors.gd` must print `RESULT: ALL PASSED`. Run it after any interior change.
 - Door test (every house: prompt, E, fade, interior, exit, back in front of the same door): `godot_console --headless --path . --script res://tools/test_doors.gd`
 - Villager check (island + 4 interiors: shared tiles, doors/exits blocked, flush, colliders, dialogue files): `godot_console --headless --path . --script res://tools/check_villagers.gd`
@@ -29,7 +31,7 @@ The Godot console exe is:
 ## Display
 
 - Base resolution is 1920x1080 with `canvas_items` stretch and `keep` aspect. The game starts maximized.
-- F11 toggles fullscreen (`WindowControls` autoload). **Esc is reserved for the pause menu**, so don't bind it to anything else.
+- F11 toggles fullscreen (`WindowControls` autoload). **Esc** closes an open menu (destination menu) and skips cutscenes; otherwise it is **reserved for the pause menu**, so don't bind it to anything else.
 - Screen effects must look the same at any resolution, so size them by screen fraction, not pixels (see `shaders/tilt_shift.gdshader`).
 
 ## Assets
@@ -41,6 +43,13 @@ The Godot console exe is:
 ## Dialogue
 
 - Villager lines live in `data/dialogue/<id>.json`: `{"name", "model", "conversations": [[page, page], ...]}`. Each talk shows the next conversation, cycling round. Edit the JSON to change what villagers say; no code changes needed.
+
+## Islands, travel and cutscenes
+
+- Islands are listed in `data/islands.json`. A new island extends `scripts/island.gd` (see `scripts/test_island.gd`) and overrides `_map`, `_prop_layout`, `_villager_layout` and `_launch_layout`.
+- Every island has a launch point on an edge tile; the tile in front of it is the landing tile, reserved so nothing can be placed there.
+- Cutscenes are shot lists in `data/cutscenes/*.json`, played by the `Cutscene` autoload (format documented at the top of `scripts/cutscene.gd`). Positions are relative to an anchor the level provides (`cutscene_anchor(name)`).
+- Anything that must survive travel goes in `Game.state` (one game state for the whole game).
 
 ## Language
 

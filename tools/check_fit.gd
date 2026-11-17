@@ -1,5 +1,6 @@
 extends SceneTree
-## Automated fit check for the island. Fails (exit code 1) if:
+## Automated fit check for every island (Pebblenook and Test Island).
+## Fails (exit code 1) if:
 ##  - two objects share a tile, or an object is off the island / on a path
 ##  - any model floats above or sinks below the ground (lowest point != y 0)
 ##  - a model spills out of its own tiles, or two models overlap
@@ -20,18 +21,30 @@ var _checks := 0
 var _island: Node3D
 
 
+const ISLANDS := ["res://scenes/pebblenook.tscn", "res://scenes/test_island.tscn"]
+
+
 func _initialize() -> void:
-	var scene: PackedScene = load(ProjectSettings.get_setting("application/run/main_scene"))
-	var level := scene.instantiate()
-	root.add_child(level)
-	_island = level.get_node("Island")
-	_run.call_deferred(level)
+	_run_all.call_deferred()
 
 
-func _run(level: Node) -> void:
+func _run_all() -> void:
+	for path: String in ISLANDS:
+		var level := (load(path) as PackedScene).instantiate()
+		root.add_child(level)
+		_island = level.get_node("Island")
+		print("== %s" % path.get_file().get_basename())
+		await _run(level, path == ISLANDS[0])
+		level.queue_free()
+		await process_frame
+	print("RESULT: %s (%d checks, %d islands)" % ["ALL PASSED" if _failures == 0 else "%d FAILED" % _failures, _checks, ISLANDS.size()])
+	quit(1 if _failures > 0 else 0)
+
+
+func _run(level: Node, first: bool) -> void:
 	for i in 30:
 		await physics_frame
-	if "selftest" in OS.get_cmdline_user_args():
+	if first and "selftest" in OS.get_cmdline_user_args():
 		_break_things()
 	var props: Array[Node3D] = []
 	for child in _island.get_node("Props").get_children():
@@ -48,15 +61,15 @@ func _run(level: Node) -> void:
 	_check_ground()
 	_check_player(level.get_node("Player"))
 
-	print("RESULT: %s (%d checks)" % ["ALL PASSED" if _failures == 0 else "%d FAILED" % _failures, _checks])
-	quit(1 if _failures > 0 else 0)
-
 
 ## Self-test: plant known problems; the check must report every one.
 func _break_things() -> void:
 	var props := _island.get_node("Props")
-	print("SELFTEST: tree_6 floats 0.3 m, barrel sinks 0.2 m, flowers moved onto a house tile, crate overlaps a house")
-	(props.get_node("tree_6") as Node3D).position.y += 0.3
+	print("SELFTEST: a tree floats 0.3 m, barrel sinks 0.2 m, flowers moved onto a house tile, crate overlaps a house")
+	for p in props.get_children():
+		if String(p.name).begins_with("tree"):
+			(p as Node3D).position.y += 0.3
+			break
 	for p in props.get_children():
 		if String(p.name).begins_with("barrel"):
 			(p.get_node("Model") as Node3D).position.y -= 0.2

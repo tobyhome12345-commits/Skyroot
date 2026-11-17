@@ -12,6 +12,7 @@ extends SceneTree
 ##   walk=<action>:<s> hold a move action (e.g. walk=move_down:1.5) first
 ##   scene=<res path> capture that scene instead of the main scene (e.g. an interior)
 ##   player=<x>,<z>   put the player on that tile first (e.g. at a door, to show its prompt)
+##   talk=<id>        open that villager's dialogue (with player=..., and frames= to let it type)
 
 var wait_frames := 10
 
@@ -78,6 +79,15 @@ func _capture() -> void:
 			Input.action_press(walk[0])
 			await create_timer(float(walk[1])).timeout
 			Input.action_release(walk[0])
+	# talk=<villager id> opens that villager's dialogue (stand next to them
+	# with player=x,z first; use frames=<n> to let the text type out).
+	for arg in args.slice(1):
+		if arg.begins_with("talk="):
+			for i in 10:
+				await physics_frame
+			var villager := root.find_child("villager_" + arg.substr(5), true, false)
+			if villager:
+				villager.talk()
 	for i in wait_frames:
 		await process_frame
 	await RenderingServer.frame_post_draw

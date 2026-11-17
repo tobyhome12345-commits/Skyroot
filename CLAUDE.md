@@ -21,6 +21,8 @@ The Godot console exe is:
 - Fit check (tiles, flush on ground, overlaps, colliders, gaps): `godot_console --headless --path . --script res://tools/check_fit.gd` must print `RESULT: ALL PASSED`. Run it after any change to props or models.
 - Interior check (all 4 house interiors: tiles, flush stacking, overlaps, walls, colliders, floor, entrance→exit path, physics walk): `godot_console --headless --path . --script res://tools/check_interiors.gd` must print `RESULT: ALL PASSED`. Run it after any interior change.
 - Door test (every house: prompt, E, fade, interior, exit, back in front of the same door): `godot_console --headless --path . --script res://tools/test_doors.gd`
+- Villager check (island + 4 interiors: shared tiles, doors/exits blocked, flush, colliders, dialogue files): `godot_console --headless --path . --script res://tools/check_villagers.gd`
+- Dialogue test (prompt, E opens/advances/closes, typing, player locked, facing, cycling): `godot_console --headless --path . --script res://tools/test_dialogue.gd`
 - Window test (not headless; start maximized, F11 fullscreen, Esc untouched): `godot_console --path . --script res://tools/test_fullscreen.gd`
 - Check the version: `godot_console --version`
 
@@ -35,6 +37,10 @@ The Godot console exe is:
 - Kenney CC0 packs live in `Assets/`. Credits are in `Assets/CREDITS.md`, so update it when a new pack is used.
 - Use the GLB/GLTF files only. The other formats are skipped via `.gdignore`.
 - Place models through `ModelLib` (`scripts/model_lib.gd`), which scales them to the tile footprint and sits them flush on the ground.
+
+## Dialogue
+
+- Villager lines live in `data/dialogue/<id>.json`: `{"name", "model", "conversations": [[page, page], ...]}`. Each talk shows the next conversation, cycling round. Edit the JSON to change what villagers say; no code changes needed.
 
 ## Language
 

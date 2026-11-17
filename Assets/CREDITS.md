@@ -11,10 +11,10 @@ Credit isn't required, but it's given here gladly. Thank you, Kenney!
 |---|---|---|---|---|
 | Fantasy Town Kit (2.0) | `Assets/Houses/` | House walls, doors, windows and roofs; pine and round trees; lanterns; back fence; rocks; cart; well parts (stone basin, wooden posts, pointed roof); notice board parts (posts, plank board, roof); interior walls, floor boards, and the stone chimney of the library fireplace | kenney.nl | CC0 |
 | Platformer Kit (4.1) | `Assets/Platformer Kit/` | Bushy round trees, flowers, tall flowers, grass tufts, mushrooms | kenney.nl | CC0 |
-| Mini Forest (1.0) | `Assets/Mini Forest/` | Small leafy plants | kenney.nl | CC0 |
+| Mini Forest (1.0) | `Assets/Mini Forest/` | Small leafy plants; Fennel the Gardener (`character-archer`) | kenney.nl | CC0 |
 | Survival Kit (2.0) | `Assets/Survival Kit/` | Barrels, crates, the well's bucket; workshop workbenches, anvil, grinder, tools, chest and bottles; the fire pit in the library fireplace | kenney.nl | CC0 |
 | Furniture Kit (2.0) | `Assets/Furniture Kit/` | All house-interior furniture: kitchen, beds, desks, chairs, sofas, tables, bookcases, lamps, rugs, plants, books, radio, laptop, teddy bear, the floor base and the exit doorways | kenney.nl | CC0 |
-| Mini Characters (2.0) | `Assets/Mini Characters/` | Player character (`character-male-a`) with its walk and idle animations | kenney.nl | CC0 |
+| Mini Characters (2.0) | `Assets/Mini Characters/` | Player character (`character-male-a`) with its walk and idle animations; villagers Elder Moss (`character-male-g`), Pip (`character-female-b`), Wren (`character-worker`), Scholar Quill (`character-male-e`) and Juniper (`character-female-c`) | kenney.nl | CC0 |
 | Modular Cave Kit (1.0) | `Assets/Modular Cave/` | Carved rock cliff walls around the island rim, dirt-and-stone path tiles, and the stone texture on the island ground and underside | kenney.nl | CC0 |
 | Skyboxes (1.0) | `Assets/Skyboxes/` | The sky (`skybox-day` panorama) | kenney.nl | CC0 |
 

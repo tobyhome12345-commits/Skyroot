@@ -176,9 +176,14 @@ func _build() -> void:
 	_name_tag.anchor_right = 0.5
 	_name_tag.anchor_top = 1.0
 	_name_tag.anchor_bottom = 1.0
+	# Zero-size anchor point at the panel's top-left; the tag grows right and
+	# down just enough to fit the name.
 	_name_tag.offset_left = -PANEL_WIDTH / 2.0 + 36.0
+	_name_tag.offset_right = _name_tag.offset_left
 	_name_tag.offset_top = -PANEL_HEIGHT - BOTTOM_MARGIN - 30.0
+	_name_tag.offset_bottom = _name_tag.offset_top
 	_name_tag.grow_horizontal = Control.GROW_DIRECTION_END
+	_name_tag.grow_vertical = Control.GROW_DIRECTION_END
 	var tag := StyleBoxFlat.new()
 	tag.bg_color = TAG
 	tag.border_color = BORDER

@@ -12,3 +12,5 @@
 
 1. **Pebblenook** (start island, working name): a grid-built island with houses, trees, a well, a notice board, a walkable player and a fixed follow camera.
    - **Asset pass:** placeholders replaced with Kenney CC0 models, and decoration added (see `Assets/CREDITS.md`).
+   - **Interiors:** each of the 4 houses has its own room (elder's home, bedroom, workshop, library), entered with E.
+   - **Villagers:** Elder Moss, Pip, Wren the Tinkerer and Scholar Quill indoors; Fennel the Gardener and Juniper the Traveller outside. Their lines live in `data/dialogue/*.json`: warm, a little funny, with hints of the fading Great Tree, the forgotten Promise of Root and Sky, festivals nobody remembers the reason for, and gossip about the other islands.

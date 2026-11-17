@@ -53,6 +53,8 @@ static func build(p: Dictionary) -> Node3D:
 			return simple(T + "cart.glb", 0.85, 0.0, p.get("rot", 0.0))
 		"stall":
 			return simple(T + "stall-green.glb", 0.9, 0.0, p.get("rot", 0.0))
+		"launch":
+			return launch_point(p["dir"])
 	push_error("Unknown prop type: %s" % p["type"])
 	return null
 
@@ -198,6 +200,14 @@ static func simple(path: String, fill: float, max_height: float, rot_y := 0.0) -
 	(root.get_node("Model") as Node3D).add_child(fitted)
 	_collider_from_model(root)
 	return root
+
+
+## Launch point: the Platformer Kit wooden pallet ramp, filling its edge
+## tile, high end pointing out over the edge (`dir`, towards the sky).
+## The model rises towards its -z; its top end is about 1.1 m high.
+static func launch_point(dir: Vector2i) -> Node3D:
+	var rot := {Vector2i(0, -1): 0.0, Vector2i(-1, 0): 90.0, Vector2i(0, 1): 180.0, Vector2i(1, 0): -90.0}[dir] as float
+	return simple(P + "platform-ramp.glb", 0.975, 0.0, rot)
 
 
 # ---------------------------------------------------------------- helpers

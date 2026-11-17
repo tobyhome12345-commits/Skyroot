@@ -43,13 +43,18 @@ func is_prompt_visible() -> bool:
 func _on_body_entered(body: Node3D) -> void:
 	if body.is_in_group("player"):
 		_player_here = true
-		_prompt.visible = true
 
 
 func _on_body_exited(body: Node3D) -> void:
 	if body.is_in_group("player"):
 		_player_here = false
-		_prompt.visible = false
+
+
+## The prompt shows while the player is here and free to act (hidden during
+## fades, menus, dialogue and cutscenes; back as soon as they close).
+func _process(_delta: float) -> void:
+	if _prompt:
+		_prompt.visible = _player_here and not Game.input_locked
 
 
 func _unhandled_input(event: InputEvent) -> void:

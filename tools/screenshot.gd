@@ -13,6 +13,9 @@ extends SceneTree
 ##   scene=<res path> capture that scene instead of the main scene (e.g. an interior)
 ##   player=<x>,<z>   put the player on that tile first (e.g. at a door, to show its prompt)
 ##   talk=<id>        open that villager's dialogue (with player=..., and frames= to let it type)
+##   menu             open the destination menu (as if pressing E at the launch point)
+##   glide=<island>:<shot>:<s>  start the glide to <island> and capture <s> seconds
+##                    into shot number <shot> (0-based); <shot> = end captures after landing
 
 var wait_frames := 10
 
@@ -25,7 +28,9 @@ func _initialize() -> void:
 	if main_path != "":
 		var scene: PackedScene = load(main_path)
 		if scene:
-			root.add_child(scene.instantiate())
+			var node := scene.instantiate()
+			root.add_child(node)
+			current_scene = node  # so scene changes (cutscenes) work
 	_capture.call_deferred()
 
 
@@ -88,6 +93,24 @@ func _capture() -> void:
 			var villager := root.find_child("villager_" + arg.substr(5), true, false)
 			if villager:
 				villager.talk()
+	for arg in args.slice(1):
+		if arg == "menu":
+			for i in 5:
+				await process_frame
+			var island := root.find_child("Island", true, false)
+			root.get_node("/root/TravelMenu").open(island.island_id)
+		elif arg.begins_with("glide="):
+			var g := arg.substr(6).split(":")
+			var cs := root.get_node("/root/Cutscene")
+			root.get_node("/root/Game").glide_to(g[0])
+			if g[1] == "end":
+				while cs.running:
+					await process_frame
+			else:
+				while cs.running and cs.shot_index < int(g[1]):
+					await process_frame
+				await create_timer(float(g[2])).timeout
+			print("Captured during shot %d: %s" % [cs.shot_index, cs.shot_name])
 	for i in wait_frames:
 		await process_frame
 	await RenderingServer.frame_post_draw

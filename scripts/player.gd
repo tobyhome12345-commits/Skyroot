@@ -51,6 +51,13 @@ func _physics_process(delta: float) -> void:
 		velocity = Vector3.ZERO
 
 
+## Plays (and loops) an animation; used by cutscenes.
+func play_anim(anim_name: String) -> void:
+	if _anim and _anim.has_animation(anim_name):
+		_anim.get_animation(anim_name).loop_mode = Animation.LOOP_LINEAR
+		_anim.play(anim_name, 0.15)
+
+
 func _play(anim_name: String) -> void:
 	if _anim and _anim.current_animation != anim_name and _anim.has_animation(anim_name):
 		_anim.play(anim_name, 0.15)

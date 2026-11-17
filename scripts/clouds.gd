@@ -46,6 +46,18 @@ func _process(delta: float) -> void:
 			c.position.x -= limit * 2.0
 
 
+## Adds one more drifting cloud at a world position (used by cutscenes).
+func add_cloud(pos: Vector3) -> Node3D:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash(pos)
+	var cloud := _make_cloud(rng)
+	add_child(cloud)
+	cloud.global_position = pos
+	_clouds.append(cloud)
+	_speeds.append(rng.randf_range(0.4, 1.0))
+	return cloud
+
+
 func _make_cloud(rng: RandomNumberGenerator) -> Node3D:
 	var cloud := Node3D.new()
 	var puffs := rng.randi_range(4, 7)

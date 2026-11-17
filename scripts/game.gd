@@ -1,6 +1,8 @@
 extends Node
-## Game-wide state (autoload "Game"): moving between the island and house
-## interiors with a fade to black, and where the player should appear.
+## Game-wide state (autoload "Game"). One game state for the whole game: it
+## lives here, outside any scene, so nothing resets when moving between
+## islands or in and out of houses. Also handles fades, house doors and
+## starting glider trips.
 
 const OUTSIDE_SCENE := "res://scenes/pebblenook.tscn"
 const INTERACT := "interact"
@@ -13,6 +15,17 @@ var input_locked := false
 var pending_spawn := {}
 ## The outside tile to return to when leaving a house.
 var return_cell := Vector2i.ZERO
+
+const ISLANDS_FILE := "res://data/islands.json"
+const GLIDE_CUTSCENE := "res://data/cutscenes/glide.json"
+
+## The one game state. Everything that must survive travel goes in here.
+var state := {
+	"island": "pebblenook",        # island the player is on
+	"visited": ["pebblenook"],     # islands been to
+	"conversations": {},           # villager id -> next conversation index
+	"trips": 0,                    # glider trips taken
+}
 
 var _fade: ColorRect
 
@@ -43,20 +56,50 @@ func enter_house(interior_scene: String, door_front: Vector2i) -> void:
 
 ## Leave a house: back outside, one tile in front of the door, facing away.
 func exit_house() -> void:
-	_travel(OUTSIDE_SCENE, {"cell": return_cell, "facing": 0.0})
-
-
-## Which conversation each villager shows next (villager id -> index).
-## Kept here so it survives going in and out of houses.
-var _conversation_index := {}
+	_travel(island_scene(state["island"]), {"cell": return_cell, "facing": 0.0})
 
 
 ## Returns the conversation to show for this villager and moves on to the
 ## next one for next time (cycling round).
 func next_conversation(villager_id: String, count: int) -> int:
-	var i: int = _conversation_index.get(villager_id, 0) % maxi(count, 1)
-	_conversation_index[villager_id] = i + 1
+	var convs: Dictionary = state["conversations"]
+	var i: int = convs.get(villager_id, 0) % maxi(count, 1)
+	convs[villager_id] = i + 1
 	return i
+
+
+## Called by an island scene when it loads.
+func arrive_at(island_id: String) -> void:
+	state["island"] = island_id
+	if not (island_id in state["visited"]):
+		(state["visited"] as Array).append(island_id)
+
+
+## All islands from data/islands.json: [{id, name, scene, known}, ...].
+func islands() -> Array:
+	var data = JSON.parse_string(FileAccess.get_file_as_string(ISLANDS_FILE))
+	if not (data is Dictionary) or not data.has("islands"):
+		push_error("Bad islands file: %s" % ISLANDS_FILE)
+		return []
+	return data["islands"]
+
+
+func island_scene(island_id: String) -> String:
+	for i in islands():
+		if i["id"] == island_id:
+			return i.get("scene", OUTSIDE_SCENE)
+	return OUTSIDE_SCENE
+
+
+## Fly to another island with the glide cutscene.
+func glide_to(island_id: String) -> void:
+	if input_locked:
+		return
+	state["trips"] += 1
+	get_node("/root/Cutscene").play(GLIDE_CUTSCENE, {
+		"destination": island_scene(island_id),
+		"destination_id": island_id,
+	})
 
 
 ## Takes (and clears) the spawn request for the scene that just loaded.
@@ -85,6 +128,13 @@ func _travel(scene_path: String, spawn: Dictionary) -> void:
 
 
 func _fade_to(alpha: float) -> void:
+	await fade(alpha, FADE_TIME)
+
+
+## Fades the whole screen to (alpha = 1) or from (alpha = 0) a colour.
+func fade(alpha: float, time: float, color := Color.BLACK) -> void:
+	if alpha > 0.0:
+		_fade.color = color
 	var tween := create_tween()
-	tween.tween_property(_fade, "modulate:a", alpha, FADE_TIME)
+	tween.tween_property(_fade, "modulate:a", alpha, maxf(time, 0.01))
 	await tween.finished

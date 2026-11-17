@@ -1,0 +1,10 @@
+{
+	"islands": [
+		{"id": "pebblenook", "name": "Pebblenook", "scene": "res://scenes/pebblenook.tscn", "known": true},
+		{"id": "test_island", "name": "Test Island", "scene": "res://scenes/test_island.tscn", "known": true},
+		{"id": "rootholm", "name": "Rootholm", "known": false},
+		{"id": "barkton", "name": "Barkton", "known": false},
+		{"id": "leafwind", "name": "Leafwind", "known": false},
+		{"id": "seedhaven", "name": "Seedhaven", "known": false}
+	]
+}

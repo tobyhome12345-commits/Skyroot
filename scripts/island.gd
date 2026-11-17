@@ -1,9 +1,11 @@
 extends Node3D
-## Builds the Pebblenook island from a tile map: grass/path top, a stepped
-## rocky underside, and floor collision. Everything comes from tile coords.
+## Builds an island from a tile map: grass/path top, a stepped rocky
+## underside, and floor collision. Everything comes from tile coords.
+## This script is Pebblenook; other islands extend it and override the
+## layout functions (_map, _prop_layout, _villager_layout, _launch_layout).
 
-## '#' = grass, '=' = path, '.' = empty sky. 16 x 16 tiles.
-const MAP: Array[String] = [
+## Pebblenook. '#' = grass, '=' = path, '.' = empty sky. 16 x 16 tiles.
+const PEBBLENOOK_MAP: Array[String] = [
 	"...##########...",
 	"..############..",
 	".##############.",
@@ -40,6 +42,8 @@ const PATH_COLOR := Color(0.83, 0.71, 0.5)
 const DIRT_COLOR := Color(0.72, 0.46, 0.32)
 const ROCK_COLOR := Color(0.6, 0.6, 0.76)
 
+## Which island this is (see data/islands.json).
+@export var island_id := "pebblenook"
 ## Tile the player starts on.
 @export var start_cell := Vector2i(7, 8)
 @export var player_path: NodePath
@@ -48,8 +52,26 @@ const ROCK_COLOR := Color(0.6, 0.6, 0.76)
 const EDGE_WALL_HEIGHT := 4.0
 
 var map_size := Vector2i(16, 16)
+var map: Array[String] = []
 ## Tiles taken by props (cell -> prop name). Used to stop overlaps.
 var occupied := {}
+## Tiles that must stay free, e.g. the landing tile (cell -> reason).
+var reserved := {}
+## The launch point: its edge tile, the way it points (towards the sky) and
+## the free landing tile in front of it. Empty cell = no launch point.
+var launch_cell := Vector2i(-1, -1)
+var launch_dir := Vector2i.ZERO
+var landing_cell := Vector2i(-1, -1)
+
+
+## The tile map. Override for other islands.
+func _map() -> Array[String]:
+	return PEBBLENOOK_MAP
+
+
+## The launch point: {"cell": edge tile, "dir": direction towards the sky}.
+func _launch_layout() -> Dictionary:
+	return {"cell": Vector2i(15, 8), "dir": Vector2i(1, 0)}
 
 
 ## Every prop on the island: type, top-left tile, footprint in tiles (size
@@ -125,11 +147,14 @@ func _prop_layout() -> Array[Dictionary]:
 
 
 func _ready() -> void:
-	map_size = Vector2i(MAP[0].length(), MAP.size())
+	map = _map()
+	map_size = Vector2i(map[0].length(), map.size())
+	Game.arrive_at(island_id)
 	_build_ground()
 	_build_edge_walls()
 	_place_props()
 	_build_doors()
+	_build_launch_trigger()
 	_place_villagers()
 	_spawn_player()
 
@@ -163,12 +188,17 @@ func _spawn_player() -> void:
 	if player == null:
 		return
 	# Coming back out of a house: appear in front of its door.
+	# Arriving by glider: appear on the landing tile.
 	var spawn := Game.take_spawn()
 	var cell: Vector2i = spawn.get("cell", start_cell)
+	var facing: float = spawn.get("facing", 0.0)
+	if spawn.get("at", "") == "launch" and landing_cell.x >= 0:
+		cell = landing_cell
+		facing = atan2(-float(launch_dir.x), -float(launch_dir.y))  # facing inland
 	if not is_ground(cell) or occupied.has(cell):
 		push_error("Player start tile %s is not free ground" % cell)
 		return
-	player.spawn_at(Grid.cell_center(cell, map_size), spawn.get("facing", 0.0))
+	player.spawn_at(Grid.cell_center(cell, map_size), facing)
 
 
 ## The tile in front of a house's door (the door is in its front-left module).
@@ -194,6 +224,31 @@ func _build_doors() -> void:
 		# Prompt floats above the door, which is on the tile edge behind.
 		door.setup(Grid.cell_center(front, map_size), Vector3(0.0, 2.6, -Grid.TILE / 2.0),
 				Game.enter_house.bind(p["interior"], front))
+
+
+## "Press E" on the landing tile in front of the launch point opens the
+## destination menu.
+func _build_launch_trigger() -> void:
+	if landing_cell.x < 0:
+		return
+	var trigger := Area3D.new()
+	trigger.set_script(preload("res://scripts/door_trigger.gd"))
+	trigger.name = "LaunchTrigger"
+	trigger.set_meta("cell", landing_cell)
+	add_child(trigger)
+	var to_ramp := Vector3(launch_dir.x, 0.0, launch_dir.y) * Grid.TILE
+	trigger.setup(Grid.cell_center(landing_cell, map_size), to_ramp + Vector3(0.0, 2.2, 0.0),
+			TravelMenu.open.bind(island_id))
+
+
+## Where cutscenes are staged. "launch": origin on the landing tile, +z
+## pointing out over the ramp towards the sky, +y up.
+func cutscene_anchor(anchor_name: String) -> Transform3D:
+	if anchor_name == "launch" and landing_cell.x >= 0:
+		var fwd := Vector3(launch_dir.x, 0.0, launch_dir.y)
+		var basis := Basis(fwd.cross(Vector3.UP) * -1.0, Vector3.UP, fwd)
+		return global_transform * Transform3D(basis, Grid.cell_center(landing_cell, map_size))
+	return global_transform
 
 
 ## Invisible walls on every empty tile that touches the island, so the
@@ -228,11 +283,11 @@ func _touches_ground(cell: Vector2i) -> bool:
 func is_ground(cell: Vector2i) -> bool:
 	if cell.x < 0 or cell.y < 0 or cell.x >= map_size.x or cell.y >= map_size.y:
 		return false
-	return MAP[cell.y][cell.x] != "."
+	return map[cell.y][cell.x] != "."
 
 
 func is_path(cell: Vector2i) -> bool:
-	return is_ground(cell) and MAP[cell.y][cell.x] == "="
+	return is_ground(cell) and map[cell.y][cell.x] == "="
 
 
 func ground_cells() -> Array[Vector2i]:
@@ -266,8 +321,18 @@ func _place_props() -> void:
 	var props_root := Node3D.new()
 	props_root.name = "Props"
 	add_child(props_root)
+	var layout := _prop_layout()
+	# The launch point goes first, and its landing tile is reserved, so no
+	# prop or villager can ever stand on it.
+	var launch := _launch_layout()
+	if not launch.is_empty():
+		launch_cell = launch["cell"]
+		launch_dir = launch["dir"]
+		landing_cell = launch_cell - launch_dir
+		reserved[landing_cell] = "landing tile"
+		layout.push_front({"type": "launch", "cell": launch_cell, "dir": launch_dir})
 	var index := 0
-	for p in _prop_layout():
+	for p in layout:
 		var cell: Vector2i = p["cell"]
 		var size: Vector2i = p.get("size", Vector2i.ONE)
 		var prop_name := "%s_%d" % [p["type"], index]

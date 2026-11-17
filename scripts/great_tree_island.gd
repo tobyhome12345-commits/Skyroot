@@ -64,6 +64,22 @@ func _reserve_extra() -> void:
 	tree = GreatTree.new()
 	add_child(tree)
 	tree.build(self, Grid.cell_center(TREE_CELL, map_size), get_node_or_null(player_path))
+	# Tiles the roots wall off from the rest of the island (between a root
+	# and the edge) become part of the root area: nothing goes there.
+	var launch := _launch_layout()
+	var start: Vector2i = (launch["cell"] as Vector2i) - (launch["dir"] as Vector2i)
+	var seen := {start: true}
+	var queue: Array[Vector2i] = [start]
+	while not queue.is_empty():
+		var c: Vector2i = queue.pop_front()
+		for d in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+			var n: Vector2i = c + d
+			if is_ground(n) and not tree.claimed.has(n) and not seen.has(n):
+				seen[n] = true
+				queue.append(n)
+	for cell in ground_cells():
+		if not seen.has(cell) and not tree.claimed.has(cell):
+			tree.claimed[cell] = "walled"
 	for cell in tree.claimed:
 		occupied[cell] = "great_tree"
 
@@ -149,11 +165,71 @@ func _prop_layout() -> Array[Dictionary]:
 		item["cell"] = cell
 		taken[cell] = true
 		out.append(item)
+	return _open_up_pockets(out)
+
+
+## Random decoration can wall off a corner. Walk the island from the landing
+## tile; while any open tile can't be reached, drop a solid piece next to it.
+func _open_up_pockets(items: Array[Dictionary]) -> Array[Dictionary]:
+	var launch := _launch_layout()
+	var start: Vector2i = (launch["cell"] as Vector2i) - (launch["dir"] as Vector2i)
+	for attempt in 50:
+		var blocked := {}
+		for cell in tree.claimed:
+			blocked[cell] = true
+		blocked[launch["cell"]] = true
+		blocked[launch["flag"]] = true
+		for it in items:
+			if it.get("solid", true):
+				for c in _item_cells(it):
+					blocked[c] = true
+		var seen := {start: true}
+		var queue: Array[Vector2i] = [start]
+		while not queue.is_empty():
+			var c: Vector2i = queue.pop_front()
+			for d in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+				var n: Vector2i = c + d
+				if is_ground(n) and not blocked.has(n) and not seen.has(n):
+					seen[n] = true
+					queue.append(n)
+		var stuck := Vector2i(-1, -1)
+		for cell in ground_cells():
+			if not blocked.has(cell) and not seen.has(cell):
+				stuck = cell
+				break
+		if stuck.x < 0:
+			return items
+		# Remove the solid piece nearest to the stuck tile.
+		var best := -1
+		var best_d := 1.0e9
+		for i in items.size():
+			if not items[i].get("solid", true):
+				continue
+			for c in _item_cells(items[i]):
+				var dd := float((c - stuck).length_squared())
+				if dd < best_d:
+					best_d = dd
+					best = i
+		if best < 0:
+			return items
+		items.remove_at(best)
+	return items
+
+
+func _item_cells(it: Dictionary) -> Array[Vector2i]:
+	var out: Array[Vector2i] = []
+	var size: Vector2i = it.get("size", Vector2i.ONE)
+	for dz in size.y:
+		for dx in size.x:
+			out.append((it["cell"] as Vector2i) + Vector2i(dx, dz))
 	return out
 
 
 func _nature(path: String, fill: float, rot: float, solid: bool) -> Dictionary:
-	return {"type": "nature", "model": path, "fill": fill, "rot": rot, "solid": solid}
+	var d := {"type": "nature", "model": path, "fill": fill, "rot": rot, "solid": solid}
+	if not solid:
+		d["max_height"] = 0.7  # soft plants stay low enough to walk through
+	return d
 
 
 # ---------------------------------------------------------------- entrance & anchors

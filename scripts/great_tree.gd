@@ -17,6 +17,8 @@ const BASE_CLAIM_RADIUS := 10.8
 ## The sealed entrance faces south; its root knot stands on the tile in front
 ## of the trunk, and the tile after that is where the player stands.
 const ENTRANCE_DISTANCE := 9.2
+## A root blocks its tile where it rises at least this high (m) above the grass.
+const ROOT_BLOCK_HEIGHT := 0.3
 
 ## Where roots leave the trunk (degrees from +x towards +z) and whether they
 ## break out again near the edge and hang over it. South (90) is kept clear
@@ -40,7 +42,9 @@ var falling: CPUParticles3D
 var entrance_glow: OmniLight3D
 
 var _rng := RandomNumberGenerator.new()
-var _fade := {}
+## Everything on the trunk (bark pieces, knots, hollows, moss, the entrance
+## knot): fades as one when it would hide the player.
+var _trunk_parts: Array[Node] = []
 
 
 ## Builds the whole tree. `at` is the trunk centre in island space.
@@ -60,6 +64,7 @@ func build(owner_island: Node3D, at: Vector3, owner_player: Node3D) -> void:
 	_build_canopy()
 	_build_moss()
 	_build_leaves()
+	_add_occluder_cyl(_trunk_parts, 10.6, 0.0, TreeLook.TRUNK_HEIGHT + 4.0)
 	apply_health()
 
 
@@ -71,7 +76,7 @@ func _build_trunk(body: StaticBody3D) -> void:
 	var flare := _model(N + "stump_old.glb", Vector3.ONE * 56.0, Vector3(0, 25, 0))
 	_place_bottom(flare, Vector3.ZERO)
 	TreeLook.apply_to(flare)
-	_add_occluder_cyl([flare], 10.5, 0.0, 15.0)
+	_trunk_parts.append(flare)
 	var pieces := [
 		# [scale, base height, turn]
 		[44.0, 0.0, 40.0], [36.0, 22.0, 160.0], [30.0, 40.0, 285.0], [25.0, 56.0, 50.0],
@@ -83,8 +88,7 @@ func _build_trunk(body: StaticBody3D) -> void:
 		_place_bottom(piece, Vector3(0, p[1], 0))
 		TreeLook.apply_to(piece, false, i % 2 == 1)
 		trunk_nodes.append(piece)
-	_add_occluder_cyl([trunk_nodes[0]], 8.6, 0.0, 30.0)
-	_add_occluder_cyl([trunk_nodes[1]], 7.2, 22.0, 46.0)
+		_trunk_parts.append(piece)
 	# Knots (small stumps sticking out) and dark hollows on the lower trunk,
 	# where the player can see them.
 	for k in [[200.0, 9.0, 7.0], [300.0, 16.0, 6.0], [20.0, 21.0, 6.5], [120.0, 12.0, 6.0]]:
@@ -92,6 +96,7 @@ func _build_trunk(body: StaticBody3D) -> void:
 		var knot := _model(N + "stump_roundDetailed.glb", Vector3.ONE * float(k[2]), Vector3(-90, -k[0] + 90.0, 0))
 		knot.position = dir * (_trunk_radius(k[1]) - 0.6) + Vector3(0, k[1], 0)
 		TreeLook.apply_to(knot, false, true)
+		_trunk_parts.append(knot)
 	var hollow_mat := StandardMaterial3D.new()
 	hollow_mat.albedo_color = Color(0.2, 0.16, 0.14)
 	hollow_mat.roughness = 1.0
@@ -108,6 +113,7 @@ func _build_trunk(body: StaticBody3D) -> void:
 		mi.scale = Vector3(1.0, 1.0, 0.35)
 		mi.look_at_from_position(mi.position, mi.position + dir, Vector3.UP)
 		add_child(mi)
+		_trunk_parts.append(mi)
 	# Solid trunk base.
 	_cyl_collider(body, 9.6, 0.0, 30.0)
 
@@ -141,7 +147,9 @@ func _build_roots(body: StaticBody3D) -> void:
 		var edge := _edge_along(dir, rad)
 		if edge < 21.0:
 			continue
-		var c := dir * 19.5 + twist + Vector3(0, -rad * 0.7, 0)
+		# Breaks out again well past the walking ring, leaving a walkable gap
+		# between the inner root (dives in by 16 m) and this one.
+		var c := dir * maxf(22.0, edge - 5.5) + twist + Vector3(0, -rad * 0.7, 0)
 		var d := dir * (edge + 0.4) + twist + Vector3(0, rad * 0.75, 0)
 		_root_piece(c, d, rad * 0.85, "outer", body)
 		# Drape: hanging down outside the island's cliff.
@@ -168,7 +176,8 @@ func _root_piece(a: Vector3, b: Vector3, rad: float, kind: String, body: StaticB
 	var steps := int(ceil(len / 0.4))
 	for i in steps + 1:
 		var p := a.lerp(b, float(i) / steps)
-		if p.y + rad * 0.8 > 0.05:
+		# Only where the root shows above the grass does it block the tile.
+		if p.y + rad * 0.8 > ROOT_BLOCK_HEIGHT:
 			for cell in _cells_within(p, rad):
 				if not claimed.has(cell):
 					claimed[cell] = "root"
@@ -200,6 +209,7 @@ func _build_entrance() -> void:
 	var knot := Node3D.new()
 	knot.name = "SealedEntrance"
 	add_child(knot)
+	_trunk_parts.append(knot)
 	for seg in [
 		[Vector3(-2.4, 0.0, -0.4), Vector3(0.9, 4.0, -1.4), 0.7],
 		[Vector3(2.4, 0.0, -0.4), Vector3(-0.9, 3.8, -1.4), 0.7],
@@ -270,12 +280,26 @@ func _build_canopy() -> void:
 		var a := TAU * j / 8.0
 		cluster_spots.append(Vector3(cos(a) * 16.0, TreeLook.CANOPY_BASE + _rng.randf_range(4.0, 14.0), sin(a) * 16.0))
 	for i in cluster_spots.size():
-		var leaf := _model(N + ["tree_fat.glb", "tree_oak.glb", "tree_fat.glb"][i % 3],
+		var leaf := _model(N + "tree_fat.glb",
 				Vector3.ONE * _rng.randf_range(26.0, 36.0), Vector3(0, _rng.randf_range(0, 360), 0))
 		var size: Vector3 = leaf.get_meta("size")
 		_place_bottom(leaf, cluster_spots[i] - Vector3(0, size.y * 0.55, 0))
 		leaf.reparent(crown)
 		TreeLook.apply_to(leaf, false, false, true)
+		# The cluster's little trunk is hidden; a flat leafy cap closes the
+		# opening it leaves underneath, so the crown looks solid from below.
+		var cap := MeshInstance3D.new()
+		cap.name = "LeafCap"
+		var cap_mesh := SphereMesh.new()
+		cap_mesh.radius = size.x * 0.34
+		cap_mesh.height = size.x * 0.68
+		cap_mesh.radial_segments = 8
+		cap_mesh.rings = 4
+		cap.mesh = cap_mesh
+		cap.material_override = TreeLook.leaf()
+		cap.position = Vector3(0.0, size.y * 0.24, 0.0)
+		cap.scale = Vector3(1.0, 0.35, 1.0)
+		leaf.add_child(cap)
 		leaf.set_meta("base", leaf.transform)
 		leaf.set_meta("order", _rng.randf())
 		canopy.append(leaf)
@@ -296,6 +320,7 @@ func _build_moss() -> void:
 		var size: Vector3 = moss.get_meta("size")
 		_place_bottom(moss, dir * (_trunk_radius(s[1]) + 0.1) + Vector3(0, s[1] - size.y, 0))
 		TreeLook.apply_to(moss, true)
+		_trunk_parts.append(moss)
 
 
 func _build_leaves() -> void:
@@ -420,6 +445,8 @@ func _add_occluder_box(nodes: Array, xform: Transform3D, half: Vector3) -> void:
 func _meshes(nodes: Array) -> Array:
 	var out := []
 	for n: Node in nodes:
+		if n is MeshInstance3D:
+			out.append(n)
 		out.append_array(n.find_children("*", "MeshInstance3D", true, false))
 	return out
 

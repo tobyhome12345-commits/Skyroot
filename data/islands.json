@@ -2,7 +2,7 @@
 	"islands": [
 		{"id": "pebblenook", "name": "Pebblenook", "scene": "res://scenes/pebblenook.tscn", "known": true, "world": [0, 0, 0]},
 		{"id": "test_island", "name": "Test Island", "scene": "res://scenes/test_island.tscn", "known": true, "world": [150, 20, 40]},
-		{"id": "great_tree", "name": "The Great Tree", "scene": "res://scenes/great_tree_island.tscn", "known": true, "world": [40, -175, -330],
+		{"id": "great_tree", "name": "The Great Tree", "scene": "res://scenes/great_tree_island.tscn", "known": true, "world": [40, -185, -395],
 			"cutscene": "res://data/cutscenes/glide_to_great_tree.json"},
 		{"id": "rootholm", "name": "Rootholm", "known": false},
 		{"id": "barkton", "name": "Barkton", "known": false},

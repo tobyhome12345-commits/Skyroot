@@ -61,7 +61,8 @@ func _run() -> void:
 		_check(not e.is_empty() and not e["enabled"], "%s is listed, greyed out and not selectable" % unknown.capitalize())
 	_check(not _menu.choose("rootholm"), "an unknown island can't be picked")
 	_check(_unknown_labels() == 4, "the 4 unknown islands say \"Unknown\"")
-	_check(entries.size() == 6, "all 6 islands are listed (%d)" % entries.size())
+	_check(entries.size() == 7, "all 7 islands are listed (%d)" % entries.size())
+	_check(_entry(entries, "great_tree").get("enabled", false), "The Great Tree is selectable")
 	await _press(KEY_ESCAPE)
 	_check(not _menu.is_open() and not _game.input_locked, "Esc closes the menu and gives control back")
 
@@ -142,8 +143,39 @@ func _run() -> void:
 	_check(_game.state["trips"] == 3 and _game.state["conversations"].get("juniper", 0) == 2,
 			"game state kept counting across 3 trips (trips 3, Juniper 2)")
 
+	# ---- Trip 4: Test Island -> the Great Tree, watched in full (tilt-up arrival).
+	island = current_scene.get_node("Island")
+	player = current_scene.get_node("Player") as CharacterBody3D
+	player.spawn_at(Grid.cell_center(island.landing_cell, island.map_size))
+	await _physics(10)
+	await _press(KEY_E)
+	_shots.clear()
+	_check(_menu.choose("great_tree"), "Test Island's menu offers the Great Tree")
+	await _wait_cutscene()
+	_check(_shots.any(func(n: String) -> bool: return n.begins_with("6. Tilt up")),
+			"arriving at the Great Tree plays the tilt-up reveal (%s)" % ", ".join(_shots))
+	await _check_landed("great_tree", "trip 4 (to the Great Tree)")
+	# ---- Glide back from the tree to both islands (skipped with Esc).
+	await _glide_skipped("pebblenook")
+	await _glide_skipped("great_tree")
+	await _glide_skipped("test_island")
+
 	print("RESULT: %s" % ("ALL PASSED" if _failures == 0 else "%d FAILED" % _failures))
 	quit(1 if _failures > 0 else 0)
+
+
+func _glide_skipped(dest: String) -> void:
+	var island := current_scene.get_node("Island")
+	var player := current_scene.get_node("Player") as CharacterBody3D
+	var from: String = island.island_id
+	player.spawn_at(Grid.cell_center(island.landing_cell, island.map_size))
+	await _physics(10)
+	await _press(KEY_E)
+	_check(_menu.choose(dest), "from %s the menu offers %s" % [from, dest])
+	await _frames(30)
+	await _press(KEY_ESCAPE)
+	await _wait_cutscene()
+	await _check_landed(dest, "%s to %s (skipped)" % [from, dest])
 
 
 ## After landing: right island, on its landing tile, glider gone, normal

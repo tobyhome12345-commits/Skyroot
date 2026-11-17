@@ -10,11 +10,12 @@ extends SceneTree
 ##    tile, or it's off the island), isn't right in front of the ramp, or
 ##    can't be reached from the island's start / from every open tile
 ##  - the launch trigger isn't on the landing tile
+##  - (Great Tree) the sealed entrance's tile is taken or can't be reached
 ## Usage: godot_console --headless --path . --script res://tools/check_islands.gd
 ##   add "-- selftest" to put a crate on a landing tile and move a launch
 ##   point inland, to prove both are caught.
 
-const ISLANDS := ["res://scenes/pebblenook.tscn", "res://scenes/test_island.tscn"]
+const ISLANDS := ["res://scenes/pebblenook.tscn", "res://scenes/test_island.tscn", "res://scenes/great_tree_island.tscn"]
 const TOL := 0.02
 
 var _failures := 0
@@ -62,6 +63,11 @@ func _check_island(island: Node3D) -> void:
 				_claim(owner_of, cell + Vector2i(dx, dz), String(p.name))
 				if p.get_meta("solid", true):
 					blocked[cell + Vector2i(dx, dz)] = true
+	# Tiles taken by something that isn't a prop (the Great Tree's trunk and roots).
+	var extra: Dictionary = island.extra_blocked_cells()
+	for cell in extra:
+		_claim(owner_of, cell, "great_tree")
+		blocked[cell] = true
 	for v in island.get_node("Villagers").get_children():
 		var cell: Vector2i = v.get_meta("cell")
 		_claim(owner_of, cell, String(v.name))
@@ -123,6 +129,13 @@ func _check_island(island: Node3D) -> void:
 			_expect(from_landing.has(g), "open tile %s can be reached from the landing tile" % g)
 	for d in doors:
 		_expect(from_landing.has(d.get_meta("cell")), "door tile %s can be reached from the landing tile" % d.get_meta("cell"))
+	var tree = island.get("tree")
+	if tree:
+		var stand: Vector2i = tree.entrance_cells()[1]
+		_expect(not owner_of.has(stand), "the sealed entrance's tile %s is free (%s)" % [stand, owner_of.get(stand, "nothing on it")])
+		_expect(from_landing.has(stand), "the sealed entrance can be reached from the landing tile")
+		var trig := island.get_node_or_null("EntranceTrigger")
+		_expect(trig != null and Grid.world_to_cell(trig.position, map_size) == stand, "the entrance prompt is on its tile")
 
 
 func _claim(owner_of: Dictionary, cell: Vector2i, who: String) -> void:
@@ -154,6 +167,11 @@ func _break_things(island: Node3D) -> void:
 			if String(p.name).begins_with("crate"):
 				p.set_meta("cell", island.landing_cell)
 				break
+	elif island.island_id == "great_tree":
+		print("SELFTEST (great_tree): put a rock on the entrance tile")
+		var last := props.get_child(props.get_child_count() - 1)
+		last.set_meta("cell", island.tree.entrance_cells()[1])
+		last.set_meta("solid", true)
 	else:
 		print("SELFTEST (%s): move the launch point inland" % island.island_id)
 		for p in props.get_children():

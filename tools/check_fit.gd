@@ -21,7 +21,7 @@ var _checks := 0
 var _island: Node3D
 
 
-const ISLANDS := ["res://scenes/pebblenook.tscn", "res://scenes/test_island.tscn"]
+const ISLANDS := ["res://scenes/pebblenook.tscn", "res://scenes/test_island.tscn", "res://scenes/great_tree_island.tscn"]
 
 
 func _initialize() -> void:
@@ -57,6 +57,7 @@ func _run(level: Node, first: bool) -> void:
 		boxes[prop] = _check_model(prop)
 		_check_collider(prop, boxes[prop])
 	_check_overlaps(props, boxes)
+	_check_tree(props, boxes)
 	_check_paths_and_doors(props)
 	_check_ground()
 	_check_player(level.get_node("Player"))
@@ -148,8 +149,11 @@ func _check_model(prop: Node3D) -> AABB:
 func _check_collider(prop: Node3D, model_box: AABB) -> void:
 	var shapes := prop.get_node("Body").find_children("*", "CollisionShape3D", true, false)
 	if not prop.get_meta("solid", true):
-		_expect(shapes.is_empty() and model_box.size.y < 0.15,
-				"%s is a flat ground detail with no collider" % prop.name)
+		# Flat details (< 15 cm), or soft plants you walk through (grass,
+		# flowers: marked "walkable", under 1 m), never get a collider.
+		var soft: bool = prop.get_meta("walkable", false) and model_box.size.y < 1.0
+		_expect(shapes.is_empty() and (model_box.size.y < 0.15 or soft),
+				"%s is a flat ground detail or soft plant with no collider" % prop.name)
 		return
 	_expect(not shapes.is_empty(), "%s (solid) has a collider" % prop.name)
 	for s in shapes:
@@ -177,13 +181,52 @@ func _shape_aabb(cs: CollisionShape3D) -> AABB:
 	return ModelUtil._relative_transform(_island, cs) * local
 
 
+## True if two boxes overlap by more than 1 cm on every axis (touching, or a
+## paper-thin piece lying on the ground, doesn't count).
+func _boxes_overlap(a: AABB, b: AABB) -> bool:
+	for axis in 3:
+		if minf(a.end[axis], b.end[axis]) - maxf(a.position[axis], b.position[axis]) <= 0.01:
+			return false
+	return true
+
+
 func _check_overlaps(props: Array[Node3D], boxes: Dictionary) -> void:
 	for i in props.size():
 		for j in range(i + 1, props.size()):
 			var a: AABB = boxes[props[i]]
 			var b: AABB = boxes[props[j]]
-			_expect(not a.grow(-0.01).intersects(b.grow(-0.01)),
+			_expect(not _boxes_overlap(a, b),
 					"%s and %s don't overlap" % [props[i].name, props[j].name])
+
+
+## On the Great Tree island: no prop sits on a tile the tree takes, and no
+## prop's model clips into the trunk or any root above the ground.
+func _check_tree(props: Array[Node3D], boxes: Dictionary) -> void:
+	var tree = _island.get("tree")
+	if tree == null:
+		return
+	for prop in props:
+		for c in _footprint(prop):
+			_expect(not tree.claimed.has(c), "%s keeps off the tree's tile %s" % [prop.name, c])
+		var box: AABB = boxes[prop]
+		var centre := Vector2(box.get_center().x, box.get_center().z)
+		var reach := Vector2(box.size.x, box.size.z).length() / 2.0
+		_expect(centre.distance_to(Vector2(tree.position.x, tree.position.z)) > 9.6 + reach,
+				"%s keeps clear of the trunk" % prop.name)
+		for r: Dictionary in tree.roots:
+			if r["kind"] == "drape":
+				continue
+			var a: Vector3 = r["a"]
+			var b: Vector3 = r["b"]
+			var rad: float = r["radius"]
+			var clips := false
+			for i in 21:
+				var p := a.lerp(b, i / 20.0)
+				if p.y + rad * 0.8 < 0.0:
+					continue  # this bit of root is under the ground
+				if Vector2(p.x, p.z).distance_to(centre) < rad + reach * 0.8 and box.end.y > p.y - rad * 0.8:
+					clips = true
+			_expect(not clips, "%s doesn't clip into a root" % prop.name)
 
 
 # ---------------------------------------------------------------- paths & doors

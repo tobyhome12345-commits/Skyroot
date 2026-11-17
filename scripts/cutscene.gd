@@ -7,15 +7,17 @@ extends Node
 ##   {"name": ..., "parts": [{"scene": "here" | "destination", "anchor": "launch",
 ##                            "shots": [shot, ...]}, ...]}
 ##   shot: {"name", "duration" (s), "ease": "linear" | "in" | "out" | "in_out",
-##          "camera": {"path": [[x,y,z], ...], "look": "player" | [x,y,z],
+##          "camera": {"path": [point, ...], "look": point | [point, point, ...],
 ##                     "look_height": m, "fov": n | [from, to]}
 ##                  | {"game": true}   (ease back to the normal game camera),
 ##          "player": {"path": [[x,y,z], ...], "curve": bool, "ease": ...},
 ##          "events": [{"at": s, "do": "glider_open" | "glider_close" | "anim" |
 ##                      "fade" | "clouds", ...}]}
-## Positions are in the anchor's space (asked from the level with
-## cutscene_anchor(name)); for "launch": origin on the landing tile, +z out
-## over the ramp to the sky, +y up, +x to the right.
+## A point is [x,y,z] in the part's anchor space, {"anchor": name, "at":
+## [x,y,z]} in another anchor's space (e.g. "tree"), or "player" (the
+## player's head). A "look" given as a list of points pans along them.
+## Anchors come from the level's cutscene_anchor(name); for "launch": origin
+## on the landing tile, +z out over the ramp to the sky, +y up, +x right.
 ## A part with "scene": "destination" switches to the destination scene,
 ## which has been loading in the background since the cutscene started.
 ## Esc or Space skips: fade to black, land at the destination.
@@ -168,11 +170,10 @@ func _apply_player(pl: Dictionary, k: float) -> void:
 	if not pl.has("path") or _player == null:
 		return
 	var curve: bool = pl.get("curve", false)
-	var p := _path(pl["path"], k, curve)
-	_player.global_position = _anchor * p
+	_player.global_position = _path(pl["path"], k, curve)
 	# Face the way they're moving.
-	var ahead := _anchor * _path(pl["path"], minf(k + 0.02, 1.0), curve)
-	var behind := _anchor * _path(pl["path"], maxf(k - 0.02, 0.0), curve)
+	var ahead := _path(pl["path"], minf(k + 0.02, 1.0), curve)
+	var behind := _path(pl["path"], maxf(k - 0.02, 0.0), curve)
 	var d := ahead - behind
 	if Vector2(d.x, d.z).length() > 0.001:
 		(_player.get_node("Visual") as Node3D).rotation.y = atan2(d.x, d.z)
@@ -192,13 +193,14 @@ func _apply_camera(cam: Dictionary, k: float, cam_start: Transform3D, fov_start:
 		_cam.global_transform = Transform3D(Basis(q), cam_start.origin.lerp(to.origin, k))
 		_cam.fov = lerpf(fov_start, game_cam.fov, k)
 		return
-	var pos := _anchor * _path(cam["path"], k, true)
+	var pos := _path(cam["path"], k, true)
 	var look = cam.get("look", "player")
+	_look_height = cam.get("look_height", 1.0)
 	var target: Vector3
-	if look is String and look == "player" and _player:
-		target = _player.global_position + Vector3(0.0, cam.get("look_height", 1.0), 0.0)
+	if look is Array and not look.is_empty() and (look[0] is Array or look[0] is Dictionary or look[0] is String):
+		target = _path(look, k, true)
 	else:
-		target = _anchor * _vec(look)
+		target = _point(look)
 	if not pos.is_equal_approx(target):
 		_cam.look_at_from_position(pos, target, Vector3.UP)
 	var fov = cam.get("fov", null)
@@ -226,7 +228,7 @@ func _event(e: Dictionary) -> void:
 			var clouds := get_tree().current_scene.find_child("Clouds", true, false)
 			if clouds and clouds.has_method("add_cloud"):
 				for p in e.get("points", []):
-					clouds.add_cloud(_anchor * _vec(p))
+					clouds.add_cloud(_point(p))
 		_:
 			push_error("Unknown cutscene event: %s" % e)
 
@@ -374,14 +376,31 @@ static func _vec(a) -> Vector3:
 	return Vector3(float(a[0]), float(a[1]), float(a[2]))
 
 
-## Point at k (0..1) along a path of points: smooth (Catmull-Rom) or
+var _look_height := 1.0
+
+
+## A point in world space: [x,y,z] (part anchor), {"anchor", "at"} or "player".
+func _point(p) -> Vector3:
+	if p is String:
+		if p == "player" and _player:
+			return _player.global_position + Vector3(0.0, _look_height, 0.0)
+		return _anchor.origin
+	if p is Dictionary:
+		var t := _anchor
+		if _level and p.has("anchor"):
+			t = _level.cutscene_anchor(p["anchor"])
+		return t * _vec(p.get("at", [0, 0, 0]))
+	return _anchor * _vec(p)
+
+
+## World point at k (0..1) along a path of points: smooth (Catmull-Rom) or
 ## straight segments; both spread evenly by length.
 func _path(points: Array, k: float, curve: bool) -> Vector3:
-	if points.size() == 1:
-		return _vec(points[0])
 	var pts: Array[Vector3] = []
 	for p in points:
-		pts.append(_vec(p))
+		pts.append(_point(p))
+	if pts.size() == 1:
+		return pts[0]
 	var lengths: Array[float] = []
 	var total := 0.0
 	for i in pts.size() - 1:

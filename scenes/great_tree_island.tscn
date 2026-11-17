@@ -1,0 +1,90 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/great_tree_island.gd" id="1_island"]
+[ext_resource type="Script" path="res://scripts/follow_camera.gd" id="2_camera"]
+[ext_resource type="PackedScene" path="res://scenes/player.tscn" id="3_player"]
+[ext_resource type="Script" path="res://scripts/clouds.gd" id="4_clouds"]
+[ext_resource type="Shader" path="res://shaders/tilt_shift.gdshader" id="5_tilt"]
+[ext_resource type="Script" path="res://scripts/debug_view.gd" id="6_debug"]
+[ext_resource type="Texture2D" path="res://Assets/Skyboxes/Skyboxes/skybox-day.png" id="7_sky"]
+
+[sub_resource type="PanoramaSkyMaterial" id="SkyMat_morning"]
+panorama = ExtResource("7_sky")
+energy_multiplier = 1.5
+
+[sub_resource type="Sky" id="Sky_morning"]
+sky_material = SubResource("SkyMat_morning")
+
+[sub_resource type="Environment" id="Env_morning"]
+background_mode = 2
+sky = SubResource("Sky_morning")
+ambient_light_source = 3
+ambient_light_energy = 0.4
+tonemap_mode = 2
+tonemap_exposure = 1.3
+tonemap_white = 6.0
+ssao_enabled = true
+ssao_radius = 1.5
+ssao_intensity = 1.2
+glow_enabled = true
+glow_intensity = 0.2
+glow_bloom = 0.05
+fog_enabled = false
+fog_light_color = Color(1, 0.9, 0.82, 1)
+fog_density = 0.002
+fog_sky_affect = 0.0
+adjustment_enabled = true
+adjustment_saturation = 1.1
+
+[sub_resource type="ShaderMaterial" id="Mat_tilt"]
+shader = ExtResource("5_tilt")
+
+[node name="GreatTreeIsland" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Env_morning")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-35, -40, 0)
+light_color = Color(1, 0.83, 0.62, 1)
+light_energy = 1.15
+light_angular_distance = 3.0
+shadow_enabled = true
+shadow_blur = 1.5
+directional_shadow_max_distance = 70.0
+
+[node name="Island" type="Node3D" parent="."]
+script = ExtResource("1_island")
+island_id = "great_tree"
+start_cell = Vector2i(16, 30)
+player_path = NodePath("../Player")
+
+[node name="Clouds" type="Node3D" parent="."]
+script = ExtResource("4_clouds")
+seed_value = 33
+cloud_count = 26
+wrap_tiles = 40
+lane_min = 22
+lane_max = 27
+
+[node name="Player" parent="." instance=ExtResource("3_player")]
+
+[node name="Camera" type="Camera3D" parent="."]
+script = ExtResource("2_camera")
+target_path = NodePath("../Player")
+
+[node name="DebugView" type="Node3D" parent="."]
+script = ExtResource("6_debug")
+island_path = NodePath("../Island")
+player_path = NodePath("../Player")
+
+[node name="TiltShift" type="CanvasLayer" parent="."]
+
+[node name="Blur" type="ColorRect" parent="TiltShift"]
+material = SubResource("Mat_tilt")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2

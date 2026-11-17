@@ -6,6 +6,9 @@ extends Node3D
 @export var cloud_count := 18
 @export var wrap_tiles := 30  # clouds wrap between -wrap and +wrap tiles on x
 @export var seed_value := 7
+## Side lanes sit this many tiles in front of / behind the island's centre.
+@export var lane_min := 12
+@export var lane_max := 16
 
 var _clouds: Array[Node3D] = []
 var _speeds: Array[float] = []
@@ -29,7 +32,7 @@ func _ready() -> void:
 		else:
 			# Side lanes in front of and behind the island.
 			var side := 1 if i % 2 == 0 else -1
-			tile = Vector3i(rng.randi_range(-wrap_tiles, wrap_tiles), rng.randi_range(-6, 1), side * rng.randi_range(12, 16))
+			tile = Vector3i(rng.randi_range(-wrap_tiles, wrap_tiles), rng.randi_range(-6, 1), side * rng.randi_range(lane_min, lane_max))
 		var cloud := _make_cloud(rng)
 		cloud.position = Vector3(tile) * Grid.TILE
 		add_child(cloud)

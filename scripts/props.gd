@@ -57,6 +57,8 @@ static func build(p: Dictionary) -> Node3D:
 			return launch_point(p["dir"])
 		"launch_flag":
 			return launch_flag(p["dir"])
+		"nature":
+			return nature(p)
 	push_error("Unknown prop type: %s" % p["type"])
 	return null
 
@@ -191,6 +193,23 @@ static func edge_piece(path: String, side: String) -> Node3D:
 	var piece := ModelLib.piece(path, ModelLib.TOWN_SCALE, Vector3.ZERO, rot)
 	(root.get_node("Model") as Node3D).add_child(piece)
 	_collider_from_model(root)
+	return root
+
+
+## A natural piece (rock, log, bush, grass...) fitted to its footprint.
+## Solid ones get a collider; walk-through ones (grass, flowers, ground
+## patches) get none and are marked "walkable".
+static func nature(p: Dictionary) -> Node3D:
+	var root := _root()
+	var size: Vector2i = p.get("size", Vector2i.ONE)
+	var foot := Vector2(size) * Grid.TILE
+	var fitted := ModelLib.fitted(p["model"], foot, p.get("fill", 0.7), p.get("max_height", 0.0), p.get("rot", 0.0))
+	(root.get_node("Model") as Node3D).add_child(fitted)
+	if p.get("solid", true):
+		_collider_from_model(root)
+	else:
+		root.set_meta("solid", false)
+		root.set_meta("walkable", true)
 	return root
 
 

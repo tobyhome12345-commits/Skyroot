@@ -153,11 +153,52 @@ func _ready() -> void:
 	Game.arrive_at(island_id)
 	_build_ground()
 	_build_edge_walls()
+	_reserve_extra()
 	_place_props()
 	_build_doors()
 	_build_launch_trigger()
 	_place_villagers()
+	_after_build()
+	_add_distant_views()
 	_spawn_player()
+
+
+## Hooks for islands that build something big before / after the props.
+func _reserve_extra() -> void:
+	pass
+
+
+func _after_build() -> void:
+	pass
+
+
+## Tiles blocked by something that isn't a prop (e.g. the Great Tree).
+func extra_blocked_cells() -> Dictionary:
+	return {}
+
+
+## The Great Tree, low-detail, far off in the sky, placed from the world
+## positions in data/islands.json so every island sees it in the same place.
+func _add_distant_views() -> void:
+	if island_id == "great_tree":
+		return
+	var here := Vector3.ZERO
+	var there := Vector3.ZERO
+	var found := false
+	for i in Game.islands():
+		if i.has("world"):
+			var w: Array = i["world"]
+			if i["id"] == island_id:
+				here = Vector3(w[0], w[1], w[2])
+			elif i["id"] == "great_tree":
+				there = Vector3(w[0], w[1], w[2])
+				found = true
+	if not found:
+		return
+	var far := DistantTree.new()
+	far.name = "DistantTree"
+	add_child(far)
+	far.position = there - here
 
 
 ## Villagers outside: id (data/dialogue/<id>.json), tile, which way they face.

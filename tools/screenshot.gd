@@ -14,6 +14,7 @@ extends SceneTree
 ##   player=<x>,<z>   put the player on that tile first (e.g. at a door, to show its prompt)
 ##   talk=<id>        open that villager's dialogue (with player=..., and frames= to let it type)
 ##   menu             open the destination menu (as if pressing E at the launch point)
+##   pressE           press E once (e.g. at the Great Tree's entrance)
 ##   glide=<island>:<shot>:<s>  start the glide to <island> and capture <s> seconds
 ##                    into shot number <shot> (0-based); <shot> = end captures after landing
 
@@ -94,7 +95,17 @@ func _capture() -> void:
 			if villager:
 				villager.talk()
 	for arg in args.slice(1):
-		if arg == "menu":
+		if arg == "pressE":
+			for i in 10:
+				await physics_frame
+			for pressed in [true, false]:
+				var ev := InputEventKey.new()
+				ev.physical_keycode = KEY_E
+				ev.keycode = KEY_E
+				ev.pressed = pressed
+				Input.parse_input_event(ev)
+				await process_frame
+		elif arg == "menu":
 			for i in 5:
 				await process_frame
 			var island := root.find_child("Island", true, false)

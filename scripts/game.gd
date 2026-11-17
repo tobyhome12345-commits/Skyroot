@@ -96,7 +96,11 @@ func glide_to(island_id: String) -> void:
 	if input_locked:
 		return
 	state["trips"] += 1
-	get_node("/root/Cutscene").play(GLIDE_CUTSCENE, {
+	var cutscene := GLIDE_CUTSCENE
+	for i in islands():
+		if i["id"] == island_id and i.has("cutscene"):
+			cutscene = i["cutscene"]
+	get_node("/root/Cutscene").play(cutscene, {
 		"destination": island_scene(island_id),
 		"destination_id": island_id,
 	})

@@ -11,8 +11,14 @@ extends Node
 ##                     "look_height": m, "fov": n | [from, to]}
 ##                  | {"game": true}   (ease back to the normal game camera),
 ##          "player": {"path": [[x,y,z], ...], "curve": bool, "ease": ...},
+##          "say": "beat"  (after the camera move, show those dialogue lines from
+##                          the cutscene's "dialogue" file and wait: E advances),
 ##          "events": [{"at": s, "do": "glider_open" | "glider_close" | "anim" |
-##                      "fade" | "clouds", ...}]}
+##                      "fade" | "clouds" | "colour" | "seed" | "villager_anim", ...}]}
+## Top level may also have "dialogue": a file with {"name", "beats": {beat: [line, ...]}}.
+## Points may also be "seed" (the traveller's seed).
+## options: {"destination": scene to glide to, "on_end": Callable run when the
+## cutscene ends, watched or skipped, before control comes back}.
 ## A point is [x,y,z] in the part's anchor space, {"anchor": name, "at":
 ## [x,y,z]} in another anchor's space (e.g. "tree"), or "player" (the
 ## player's head). A "look" given as a list of points pans along them.
@@ -164,6 +170,21 @@ func _run_shot(shot: Dictionary) -> void:
 		t += get_process_delta_time()
 	for e: Dictionary in events:
 		_event(e)
+	if shot.has("say") and not _skip:
+		await _say(shot["say"])
+
+
+## Shows one beat of the cutscene's dialogue and waits until it's read.
+func _say(beat: String) -> void:
+	var path: String = _data.get("dialogue", "")
+	var lines = JSON.parse_string(FileAccess.get_file_as_string(path))
+	if not (lines is Dictionary) or not (lines.get("beats", {}) as Dictionary).has(beat):
+		push_error("Cutscene dialogue beat missing: %s in %s" % [beat, path])
+		return
+	var box := get_node("/root/DialogueBox")
+	box.open(lines["name"], lines["beats"][beat])
+	while box.is_open() and not _skip:
+		await get_tree().process_frame
 
 
 func _apply_player(pl: Dictionary, k: float) -> void:
@@ -229,8 +250,23 @@ func _event(e: Dictionary) -> void:
 			if clouds and clouds.has_method("add_cloud"):
 				for p in e.get("points", []):
 					clouds.add_cloud(_point(p))
+		"colour":
+			Game.set_colour_level(float(e.get("to", 1.0)), float(e.get("time", 0.0)))
+		"seed":
+			var seed := _find_seed()
+			if seed:
+				seed.set_glow(float(e.get("glow", 1.0)), float(e.get("time", 0.8)))
+		"villager_anim":
+			var v := get_tree().current_scene.find_child("villager_" + String(e.get("id", "")), true, false)
+			if v:
+				for ap in v.find_children("*", "AnimationPlayer", true, false):
+					(ap as AnimationPlayer).play(e.get("name", "idle"), 0.2)
 		_:
 			push_error("Unknown cutscene event: %s" % e)
+
+
+func _find_seed() -> Node:
+	return _player.find_child("Seed", true, false) if _player else null
 
 
 # ---------------------------------------------------------------- scene switch
@@ -305,14 +341,15 @@ const GLIDER_HANDS := Vector3(0.0, 0.78, 0.32)
 func _finish_skipped() -> void:
 	skipped = true
 	await Game.fade(1.0, 0.3)
+	get_node("/root/DialogueBox").close_now()
 	if not _switched and _options.get("destination", "") != "":
 		await _switch_to_destination()
 		var scene := get_tree().current_scene
 		_level = _find_level(scene)
 		_player = scene.find_child("Player", true, false) as CharacterBody3D
 	_close_glider(true)
-	# Put the player on the landing tile, ready to go.
-	if _level and _player and "landing_cell" in _level:
+	# After a glide, put the player on the landing tile, ready to go.
+	if _options.get("destination", "") != "" and _level and _player and "landing_cell" in _level:
 		var cell: Vector2i = _level.landing_cell
 		var dir: Vector2i = _level.launch_dir
 		_player.spawn_at(Grid.cell_center(cell, _level.map_size), atan2(-float(dir.x), -float(dir.y)))
@@ -328,6 +365,9 @@ func _finish() -> void:
 		if _player.has_method("play_anim"):
 			_player.play_anim("idle")
 	_restore_camera()
+	var on_end: Callable = _options.get("on_end", Callable())
+	if on_end.is_valid():
+		on_end.call(skipped)
 	running = false
 	Game.input_locked = false
 	finished.emit()
@@ -357,6 +397,10 @@ func _input(event: InputEvent) -> void:
 	var key := event as InputEventKey
 	if key and key.pressed and not key.echo and key.physical_keycode in [KEY_ESCAPE, KEY_SPACE]:
 		skip()
+	elif event.is_action_pressed(Game.INTERACT) and not event.is_echo():
+		var box := get_node("/root/DialogueBox")
+		if box.is_open():
+			box.advance()
 
 
 # ---------------------------------------------------------------- maths
@@ -384,6 +428,8 @@ func _point(p) -> Vector3:
 	if p is String:
 		if p == "player" and _player:
 			return _player.global_position + Vector3(0.0, _look_height, 0.0)
+		if p == "seed" and _find_seed():
+			return (_find_seed() as Node3D).global_position
 		return _anchor.origin
 	if p is Dictionary:
 		var t := _anchor

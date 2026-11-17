@@ -8,6 +8,15 @@
   - Small steps.
   - One island per scene.
 
+## Lore
+
+- **The Great Tree** is the source of joy in the sky world and the mother of every tree. Its roots hold the islands up, and its gladness flows out into the world as colour, music and laughter.
+- **The Old Promise:** long ago each island gave the tree a gift to keep it glad: **water** (Rootholm), **strength** (Barkton), **breath** (Leafwind) and **new life** (Seedhaven).
+- **The Forgetting:** as the tree's gladness faded, so did people's joy. They forgot why they celebrated, the rituals became empty traditions, and the gifts stopped.
+- **The Fading:** now colour is draining from the world, everyone is quiet and tired, and each of the four islands has a problem. Rumour says the tree's first caretaker still wanders its roots, lonely (a hint only, never named yet).
+- **The traveller** (the player) is a human from far below the clouds, carrying a withered seed from the Great Tree that has been passed down in their family. It glows when they are near an island that needs help.
+- **Colour level:** the world's colour is one value (`Game.colour_level`, 0 = drained, 1 = full). For now only the opening scene uses it; later the world's joy will drive it.
+
 ## Stages
 
 1. **Pebblenook** (start island, working name): a grid-built island with houses, trees, a well, a notice board, a walkable player and a fixed follow camera.
@@ -18,3 +27,4 @@
 2. **Test Island** (`scenes/test_island.tscn`): a small 10 x 10 island to try travel, with its own launch point.
    - **Glide cutscene:** about 8 s in two halves: run up the ramp, the glider opens, glide over the clouds; then the island drifts into view and the player lands on the landing tile. The shot list is in `data/cutscenes/glide.json`, played by the reusable `Cutscene` system (later: returning gifts to the Great Tree). Esc / Space skip.
    - **One game state** (`Game.state`): current island, visited islands, villager conversation progress and trip count carry across every trip.
+3. **Opening lore scene** (`data/cutscenes/intro.json`, lines in `data/dialogue/elder_intro.json`): plays once, the first time a new game starts on Pebblenook. Elder Moss meets the traveller, the seed glows, and he tells of the Great Tree, the Old Promise, the Forgetting and the Fading, then points to the launch point. Esc / Space skip it. Afterwards Elder Moss gives short recaps.

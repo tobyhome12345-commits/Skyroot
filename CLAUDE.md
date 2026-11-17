@@ -26,6 +26,7 @@ The Godot console exe is:
 - Door test (every house: prompt, E, fade, interior, exit, back in front of the same door): `godot_console --headless --path . --script res://tools/test_doors.gd`
 - Villager check (island + 4 interiors: shared tiles, doors/exits blocked, flush, colliders, dialogue files): `godot_console --headless --path . --script res://tools/check_villagers.gd`
 - Dialogue test (prompt, E opens/advances/closes, typing, player locked, facing, cycling): `godot_console --headless --path . --script res://tools/test_dialogue.gd`
+- Intro test (opening lore scene: starts once, all beats in order, seed glows, camera never clips, Esc / Space skip, no replay, control and colour back, elder recaps): `godot_console --headless --path . --script res://tools/test_intro.gd`
 - Window test (not headless; start maximized, F11 fullscreen, Esc untouched): `godot_console --path . --script res://tools/test_fullscreen.gd`
 - Check the version: `godot_console --version`
 
@@ -79,6 +80,6 @@ The Godot console exe is:
 
 ## Screenshots
 
-- **Use screenshots sparingly**: at most a few per stage, only where a picture really helps (e.g. one before and one after a visual change). Never take dozens. They use up a lot of the user's usage.
-- Verify everything else with the headless checks and tests.
-- How: `godot_console --path . --script res://tools/screenshot.gd -- screenshots/<name>.png` (not headless; options are listed at the top of `tools/screenshot.gd`).
+- **Do not take screenshots.** The user asked for none (they use up a lot of their usage). Only take one if the user explicitly asks for that specific screenshot in their latest message; a stage brief listing screenshots is not enough.
+- Verify everything with the headless checks and tests instead, and describe results in text.
+- If asked: `godot_console --path . --script res://tools/screenshot.gd -- screenshots/<name>.png` (options at the top of `tools/screenshot.gd`).

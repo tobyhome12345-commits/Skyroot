@@ -25,13 +25,27 @@ var state := {
 	"visited": ["pebblenook"],     # islands been to
 	"conversations": {},           # villager id -> next conversation index
 	"trips": 0,                    # glider trips taken
+	"intro_done": false,           # the opening lore scene has played (or was skipped)
 }
+
+## How much colour the world has: 0 = drained, 1 = full. ONE value that the
+## whole look follows (every WorldEnvironment's saturation and brightness).
+## For now only the opening scene changes it; later the world's joy will.
+var colour_level := 1.0:
+	set(v):
+		colour_level = clampf(v, 0.0, 1.0)
+		_apply_colour_everywhere()
+
+## Tools / tests can turn the opening scene on (it never auto-plays while a
+## tool script is running, so checks see the normal game).
+var force_intro := false
 
 var _fade: ColorRect
 
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	get_tree().node_added.connect(_on_node_added)
 	if not InputMap.has_action(INTERACT):
 		InputMap.add_action(INTERACT)
 		var ev := InputEventKey.new()
@@ -104,6 +118,45 @@ func glide_to(island_id: String) -> void:
 		"destination": island_scene(island_id),
 		"destination_id": island_id,
 	})
+
+
+## Fades the world's colour to `level` over `time` seconds.
+func set_colour_level(level: float, time := 0.0) -> void:
+	if time <= 0.0:
+		colour_level = level
+		return
+	var tween := create_tween()
+	tween.tween_property(self, "colour_level", level, time)
+
+
+## The opening scene may auto-play (not under a tool script, unless forced).
+func intro_allowed() -> bool:
+	return force_intro or not ("--script" in OS.get_cmdline_args())
+
+
+func _on_node_added(n: Node) -> void:
+	if n is WorldEnvironment:
+		_apply_colour(n as WorldEnvironment)
+
+
+func _apply_colour_everywhere() -> void:
+	if not is_inside_tree():
+		return
+	for we in get_tree().root.find_children("*", "WorldEnvironment", true, false):
+		_apply_colour(we as WorldEnvironment)
+
+
+## Each environment keeps its own base saturation; colour_level scales it.
+func _apply_colour(we: WorldEnvironment) -> void:
+	var env := we.environment
+	if env == null:
+		return
+	if not env.has_meta("base_saturation"):
+		env.set_meta("base_saturation", env.adjustment_saturation if env.adjustment_enabled else 1.0)
+		env.set_meta("base_brightness", env.adjustment_brightness if env.adjustment_enabled else 1.0)
+	env.adjustment_enabled = true
+	env.adjustment_saturation = float(env.get_meta("base_saturation")) * lerpf(0.25, 1.0, colour_level)
+	env.adjustment_brightness = float(env.get_meta("base_brightness")) * lerpf(0.9, 1.0, colour_level)
 
 
 ## Takes (and clears) the spawn request for the scene that just loaded.

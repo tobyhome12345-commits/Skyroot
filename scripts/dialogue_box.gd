@@ -26,6 +26,8 @@ var _page := 0
 var _shown := 0.0
 var _open := false
 var _blink := 0.0
+## Was the player already locked (e.g. by a cutscene) when the box opened?
+var _was_locked := false
 
 
 func _ready() -> void:
@@ -59,6 +61,7 @@ func open(speaker: String, pages: Array) -> void:
 	_pages = pages
 	_page = 0
 	_name_label.text = speaker
+	_was_locked = Game.input_locked and not _open
 	_open = true
 	Game.input_locked = true
 	_set_visible(true)
@@ -108,8 +111,14 @@ func advance() -> void:
 func _close() -> void:
 	_open = false
 	_set_visible(false)
-	Game.input_locked = false
+	Game.input_locked = _was_locked
 	closed.emit()
+
+
+## Closes the box straight away (e.g. when a cutscene is skipped).
+func close_now() -> void:
+	if _open:
+		_close()
 
 
 func _set_visible(on: bool) -> void:

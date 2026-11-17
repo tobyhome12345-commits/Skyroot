@@ -1,0 +1,387 @@
+{
+	"name": "Opening lore scene",
+	"dialogue": "res://data/dialogue/elder_intro.json",
+	"parts": [
+		{
+			"scene": "here",
+			"anchor": "start",
+			"shots": [
+				{
+					"name": "1. Muted opening: Pebblenook, tired",
+					"duration": 5.0,
+					"ease": "in_out",
+					"camera": {
+						"path": [
+							[
+								6,
+								30,
+								40
+							],
+							[
+								-2,
+								24,
+								30
+							]
+						],
+						"look": [
+							0,
+							0,
+							-4
+						],
+						"fov": 50
+					},
+					"events": [
+						{
+							"at": 0.0,
+							"do": "fade",
+							"to": 1.0,
+							"time": 0.01
+						},
+						{
+							"at": 0.15,
+							"do": "fade",
+							"to": 0.0,
+							"time": 2.5
+						}
+					]
+				},
+				{
+					"name": "2. Slow pan to the withered Great Tree",
+					"duration": 7.0,
+					"ease": "in_out",
+					"camera": {
+						"path": [
+							[
+								-2,
+								24,
+								30
+							],
+							[
+								0,
+								18,
+								6
+							],
+							[
+								0,
+								14,
+								-10
+							]
+						],
+						"look": [
+							[
+								0,
+								0,
+								-4
+							],
+							[
+								0,
+								4,
+								-14
+							],
+							{
+								"anchor": "distant_tree",
+								"at": [
+									0,
+									58,
+									0
+								]
+							}
+						],
+						"fov": [
+							50,
+							40
+						]
+					}
+				},
+				{
+					"name": "3. The traveller and the elder",
+					"duration": 3.5,
+					"ease": "in_out",
+					"camera": {
+						"path": [
+							[
+								-0.6,
+								2.3,
+								5.2
+							],
+							[
+								-1.0,
+								2.2,
+								4.6
+							]
+						],
+						"look": [
+							-1.0,
+							1.25,
+							0.0
+						],
+						"fov": 45
+					},
+					"say": "greeting"
+				},
+				{
+					"name": "4. The seed glows (close-up)",
+					"duration": 2.5,
+					"ease": "in_out",
+					"camera": {
+						"path": [
+							[
+								-0.5,
+								1.6,
+								2.6
+							],
+							[
+								-0.8,
+								1.35,
+								2.0
+							]
+						],
+						"look": "seed",
+						"fov": 30
+					},
+					"events": [
+						{
+							"at": 0.6,
+							"do": "seed",
+							"glow": 1.0,
+							"time": 1.5
+						}
+					],
+					"say": "seed"
+				},
+				{
+					"name": "5. What the Great Tree is",
+					"duration": 2.5,
+					"ease": "in_out",
+					"camera": {
+						"path": [
+							[
+								1.4,
+								2.1,
+								2.4
+							],
+							[
+								1.2,
+								2.0,
+								2.0
+							]
+						],
+						"look": [
+							-2.0,
+							1.4,
+							0.0
+						],
+						"fov": 45
+					},
+					"say": "tree"
+				},
+				{
+					"name": "6. The Old Promise: the carving on the notice board",
+					"duration": 2.5,
+					"ease": "in_out",
+					"camera": {
+						"path": [
+							[
+								-2.0,
+								1.5,
+								-1.4
+							],
+							[
+								-2.0,
+								1.4,
+								-2.0
+							]
+						],
+						"look": [
+							-2.0,
+							1.33,
+							-4.0
+						],
+						"fov": 42
+					},
+					"say": "promise"
+				},
+				{
+					"name": "7. The Forgetting",
+					"duration": 2.5,
+					"ease": "in_out",
+					"camera": {
+						"path": [
+							[
+								-4.6,
+								2.0,
+								2.4
+							],
+							[
+								-4.3,
+								1.9,
+								2.0
+							]
+						],
+						"look": [
+							0.0,
+							1.2,
+							0.0
+						],
+						"fov": 45
+					},
+					"say": "forgetting"
+				},
+				{
+					"name": "8. The Fading: the distant tree",
+					"duration": 3.0,
+					"ease": "in_out",
+					"camera": {
+						"path": [
+							[
+								0,
+								12,
+								-6
+							],
+							[
+								0,
+								14,
+								-10
+							]
+						],
+						"look": [
+							[
+								0,
+								3,
+								-14
+							],
+							{
+								"anchor": "distant_tree",
+								"at": [
+									0,
+									58,
+									0
+								]
+							}
+						],
+						"fov": 40
+					},
+					"say": "fading"
+				},
+				{
+					"name": "9. Why the seed matters",
+					"duration": 2.5,
+					"ease": "in_out",
+					"camera": {
+						"path": [
+							[
+								-0.4,
+								1.6,
+								2.5
+							],
+							[
+								-0.8,
+								1.35,
+								2.0
+							]
+						],
+						"look": "seed",
+						"fov": 30
+					},
+					"events": [
+						{
+							"at": 0.0,
+							"do": "seed",
+							"glow": 0.6,
+							"time": 0.5
+						},
+						{
+							"at": 0.6,
+							"do": "seed",
+							"glow": 1.0,
+							"time": 0.8
+						}
+					],
+					"say": "why_seed"
+				},
+				{
+					"name": "10. What the traveller can do",
+					"duration": 2.5,
+					"ease": "in_out",
+					"camera": {
+						"path": [
+							[
+								-0.6,
+								2.3,
+								5.2
+							],
+							[
+								-1.0,
+								2.2,
+								4.6
+							]
+						],
+						"look": [
+							-1.0,
+							1.25,
+							0.0
+						],
+						"fov": 45
+					},
+					"say": "what_to_do"
+				},
+				{
+					"name": "11. The elder points to the launch point",
+					"duration": 3.0,
+					"ease": "in_out",
+					"camera": {
+						"path": [
+							[
+								-4.0,
+								4.6,
+								3.0
+							],
+							[
+								-3.5,
+								4.4,
+								2.6
+							]
+						],
+						"look": [
+							16.0,
+							1.5,
+							0.0
+						],
+						"fov": 45
+					},
+					"events": [
+						{
+							"at": 0.3,
+							"do": "villager_anim",
+							"id": "elder",
+							"name": "interact-right"
+						}
+					],
+					"say": "launch"
+				},
+				{
+					"name": "12. Back to the game: colour returns",
+					"duration": 2.5,
+					"ease": "in_out",
+					"camera": {
+						"game": true
+					},
+					"events": [
+						{
+							"at": 0.0,
+							"do": "colour",
+							"to": 1.0,
+							"time": 2.5
+						},
+						{
+							"at": 0.0,
+							"do": "seed",
+							"glow": 0.0,
+							"time": 1.0
+						}
+					]
+				}
+			]
+		}
+	]
+}

@@ -169,7 +169,9 @@ func _reserve_extra() -> void:
 
 
 func _after_build() -> void:
-	pass
+	# A new game starts on Pebblenook with the opening lore scene, once.
+	if island_id == "pebblenook":
+		Intro.maybe_start(self)
 
 
 ## Tiles blocked by something that isn't a prop (e.g. the Great Tree).
@@ -286,6 +288,13 @@ func _build_launch_trigger() -> void:
 ## Where cutscenes are staged. "launch": origin on the landing tile, +z
 ## pointing out over the ramp towards the sky, +y up.
 func cutscene_anchor(anchor_name: String) -> Transform3D:
+	# "start": the start tile, no turn. "distant_tree": the far-off Great Tree.
+	if anchor_name == "start":
+		return global_transform * Transform3D(Basis(), Grid.cell_center(start_cell, map_size))
+	if anchor_name == "distant_tree":
+		var far := get_node_or_null("DistantTree") as Node3D
+		if far:
+			return Transform3D(Basis(), far.global_position)
 	if anchor_name == "launch" and landing_cell.x >= 0:
 		var fwd := Vector3(launch_dir.x, 0.0, launch_dir.y)
 		var basis := Basis(fwd.cross(Vector3.UP) * -1.0, Vector3.UP, fwd)

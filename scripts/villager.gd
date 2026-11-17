@@ -16,6 +16,8 @@ const TALK_RADIUS := 2.3
 const TURN_SPEED := 8.0
 
 var villager_id := ""
+## Key for "which conversation is next" (differs for recap lines).
+var counter_key := ""
 var display_name := ""
 var conversations: Array = []
 
@@ -45,6 +47,11 @@ static func create(id: String, tile_centre: Vector3, facing_degrees := 0.0) -> V
 	v.villager_id = id
 	v.display_name = data["name"]
 	v.conversations = data["conversations"]
+	# After the opening scene, some villagers (Elder Moss) give story recaps.
+	var game := (Engine.get_main_loop() as SceneTree).root.get_node_or_null("/root/Game")
+	if data.has("recap_conversations") and game and game.state.get("intro_done", false):
+		v.conversations = data["recap_conversations"]
+		v.counter_key = id + "_recap"
 	v.position = tile_centre
 	v._target_yaw = deg_to_rad(facing_degrees)
 	v._build(data["model"])
@@ -155,5 +162,5 @@ func talk() -> void:
 		var d := _player.global_position - global_position
 		_target_yaw = atan2(d.x, d.z)
 	_prompt.visible = false
-	var index: int = _game().next_conversation(villager_id, conversations.size())
+	var index: int = _game().next_conversation(counter_key if counter_key != "" else villager_id, conversations.size())
 	_dialogue_box().open(display_name, conversations[index])

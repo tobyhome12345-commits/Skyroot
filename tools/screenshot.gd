@@ -13,6 +13,7 @@ extends SceneTree
 ##   scene=<res path> capture that scene instead of the main scene (e.g. an interior)
 ##   player=<x>,<z>   put the player on that tile first (e.g. at a door, to show its prompt)
 ##   talk=<id>        open that villager's dialogue (with player=..., and frames= to let it type)
+##   intro=<shot>:<s> play the opening scene and capture <s> s into shot <shot> (0-based)
 ##   menu             open the destination menu (as if pressing E at the launch point)
 ##   pressE           press E once (e.g. at the Great Tree's entrance)
 ##   glide=<island>:<shot>:<s>  start the glide to <island> and capture <s> seconds
@@ -22,6 +23,20 @@ var wait_frames := 10
 
 
 func _initialize() -> void:
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("intro="):
+			_start_with_intro.call_deferred()
+			return
+	_load_main()
+
+
+## The opening scene only plays if Game allows it, so switch that on first.
+func _start_with_intro() -> void:
+	root.get_node("/root/Game").force_intro = true
+	_load_main()
+
+
+func _load_main() -> void:
 	var main_path: String = ProjectSettings.get_setting("application/run/main_scene", "")
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("scene="):
@@ -105,6 +120,20 @@ func _capture() -> void:
 				ev.pressed = pressed
 				Input.parse_input_event(ev)
 				await process_frame
+		elif arg.begins_with("intro="):
+			var parts_i := arg.substr(6).split(":")
+			var cs := root.get_node("/root/Cutscene")
+			for i in 300:
+				if cs.running:
+					break
+				await process_frame
+			var box := root.get_node("/root/DialogueBox")
+			while cs.running and cs.shot_index < int(parts_i[0]):
+				if box.is_open():
+					box.advance()  # read on to the wanted shot
+				await process_frame
+			await create_timer(float(parts_i[1])).timeout
+			print("Captured during shot %d: %s" % [cs.shot_index, cs.shot_name])
 		elif arg == "menu":
 			for i in 5:
 				await process_frame

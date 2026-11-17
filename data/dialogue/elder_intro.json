@@ -1,0 +1,53 @@
+{
+	"name": "Elder Moss",
+	"beats": {
+		"greeting": [
+			"Well, well. A face I don't know, and I know all eleven faces on this island. Twelve, if you count the goat.",
+			"Welcome to Pebblenook, traveller. You've come a long way up. Your boots are still wet from the clouds."
+		],
+		"seed": [
+			"Hold on. What's that in your hand?",
+			"A seed... and it's glowing. Oh my. I haven't seen anything glow round here in a long, long while."
+		],
+		"tree": [
+			"See that tree, far off in the sky? That's the Great Tree. Mother of every tree there is.",
+			"Its roots hold our islands up. And when it's glad, that gladness spills out into the world, as colour, and music, and laughter."
+		],
+		"promise": [
+			"Long ago there was a promise. Each island gave the tree a gift, to keep it glad.",
+			"Rootholm gave water. Barkton gave strength. Leafwind gave breath. Seedhaven gave new life.",
+			"That old carving on our notice board shows it. I walk past it every day. I think it's mostly there to hold up the goat posters."
+		],
+		"forgetting": [
+			"But the tree's gladness faded, bit by bit. And as it did, so did ours.",
+			"We still hold the festivals, but nobody remembers why. And somewhere along the way, the gifts just... stopped."
+		],
+		"fading": [
+			"Now the colour is draining out of the world. Everyone's quiet. Tired, all the time.",
+			"And each of the four islands has a trouble of its own. They say the tree's first caretaker still wanders its roots, all alone. But they say a lot of things."
+		],
+		"why_seed": [
+			"That seed came from the Great Tree. Passed down in your family, you say? Then it remembers, even if we don't.",
+			"It glows when it's near an island that needs help. And right now, I'd wager, it's glowing for all of them."
+		],
+		"what_to_do": [
+			"Glide to the islands. Help them, and help them remember their gift.",
+			"Then perhaps the tree will be glad again. And perhaps we will be too."
+		],
+		"launch": [
+			"The launch point is just over there, on the edge. Hold on tight and don't look down. Or do, actually. The view's lovely.",
+			"Off you go. And do come back and tell me everything. I'll try to remember to ask."
+		]
+	},
+	"order": [
+		"greeting",
+		"seed",
+		"tree",
+		"promise",
+		"forgetting",
+		"fading",
+		"why_seed",
+		"what_to_do",
+		"launch"
+	]
+}

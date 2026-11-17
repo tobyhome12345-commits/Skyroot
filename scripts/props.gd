@@ -182,7 +182,53 @@ static func notice_board() -> Node3D:
 	top.position = Vector3(0.0, 1.75, 0.0)
 	model.add_child(top)
 	_collider_from_model(root)
+	root.add_child(_promise_carving())
 	return root
+
+
+## The Old Promise carved into the board's front: the four islands, each
+## with its gift. Shallow shapes and burnt-in words, flush on the planks.
+static func _promise_carving() -> Node3D:
+	var carving := Node3D.new()
+	carving.name = "Carving"
+	# The board's front face: the plank model stands up from z = 0 to its
+	# thickness (0.06 x 1.5), so the carving sits just in front of that.
+	var front := 0.06 * 1.5 + 0.004
+	var ink := Color(0.32, 0.2, 0.12)
+	var mat := MeshUtil.color_material(Color(0.42, 0.27, 0.16))
+	var gifts := [["Rootholm", "water"], ["Barkton", "strength"], ["Leafwind", "breath"], ["Seedhaven", "new life"]]
+	for i in 4:
+		var x := -0.45 + 0.3 * i
+		# The island: a small raised disc.
+		var disc := MeshInstance3D.new()
+		var cyl := CylinderMesh.new()
+		cyl.top_radius = 0.09
+		cyl.bottom_radius = 0.09
+		cyl.height = 0.012
+		disc.mesh = cyl
+		disc.material_override = mat
+		disc.rotation_degrees.x = 90.0
+		disc.position = Vector3(x, 1.36, front + 0.006)
+		carving.add_child(disc)
+		for t in [[gifts[i][0], 1.22, 0.00075], [gifts[i][1], 1.16, 0.00065]]:
+			var label := Label3D.new()
+			label.text = t[0]
+			label.font_size = 64
+			label.pixel_size = t[2]
+			label.modulate = ink
+			label.outline_size = 0
+			label.double_sided = false
+			label.position = Vector3(x, t[1], front + 0.003)
+			carving.add_child(label)
+	var title := Label3D.new()
+	title.text = "The Old Promise"
+	title.font_size = 64
+	title.pixel_size = 0.0013
+	title.modulate = ink
+	title.outline_size = 0
+	title.position = Vector3(0.0, 1.55, front + 0.003)
+	carving.add_child(title)
+	return carving
 
 
 ## A piece that runs along one edge of its tile (fence, hedge).

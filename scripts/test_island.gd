@@ -22,7 +22,7 @@ func _map() -> Array[String]:
 
 ## Launch point on the west edge, pointing west; the path leads inland.
 func _launch_layout() -> Dictionary:
-	return {"cell": Vector2i(0, 5), "dir": Vector2i(-1, 0)}
+	return {"cell": Vector2i(0, 5), "dir": Vector2i(-1, 0), "flag": Vector2i(0, 4)}
 
 
 func _prop_layout() -> Array[Dictionary]:

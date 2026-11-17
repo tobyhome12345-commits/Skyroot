@@ -47,7 +47,7 @@ The Godot console exe is:
 ## Islands, travel and cutscenes
 
 - Islands are listed in `data/islands.json`. A new island extends `scripts/island.gd` (see `scripts/test_island.gd`) and overrides `_map`, `_prop_layout`, `_villager_layout` and `_launch_layout`.
-- Every island has a launch point on an edge tile; the tile in front of it is the landing tile, reserved so nothing can be placed there.
+- Every island has a launch point on an edge tile, with its flag / signpost on a tile beside it along the edge; the tile in front of it is the landing tile, reserved so nothing can be placed there. The launch lip is the only thing allowed to stick out of its tile, and only over open sky (the fit checks enforce this).
 - Cutscenes are shot lists in `data/cutscenes/*.json`, played by the `Cutscene` autoload (format documented at the top of `scripts/cutscene.gd`). Positions are relative to an anchor the level provides (`cutscene_anchor(name)`).
 - Anything that must survive travel goes in `Game.state` (one game state for the whole game).
 

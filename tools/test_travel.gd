@@ -51,13 +51,17 @@ func _run() -> void:
 	_check(_game.input_locked, "player is locked while the menu is open")
 	var entries: Array = _menu.entries()
 	var ids := entries.map(func(e: Dictionary) -> String: return e["id"])
-	_check(not ("pebblenook" in ids), "the island you're on isn't listed")
+	var here := _entry(entries, "pebblenook")
+	_check(not here.is_empty() and not here["enabled"] and here["tag"] == "You are here",
+			"the island you're on is listed, greyed out, with a \"You are here\" tag")
+	_check(not _menu.choose("pebblenook"), "the island you're on can't be picked")
 	_check(_entry(entries, "test_island").get("enabled", false), "Test Island is selectable")
 	for unknown in ["rootholm", "barkton", "leafwind", "seedhaven"]:
 		var e := _entry(entries, unknown)
 		_check(not e.is_empty() and not e["enabled"], "%s is listed, greyed out and not selectable" % unknown.capitalize())
 	_check(not _menu.choose("rootholm"), "an unknown island can't be picked")
 	_check(_unknown_labels() == 4, "the 4 unknown islands say \"Unknown\"")
+	_check(entries.size() == 6, "all 6 islands are listed (%d)" % entries.size())
 	await _press(KEY_ESCAPE)
 	_check(not _menu.is_open() and not _game.input_locked, "Esc closes the menu and gives control back")
 
@@ -100,8 +104,9 @@ func _run() -> void:
 	await _press(KEY_E)
 	entries = _menu.entries()
 	ids = entries.map(func(e: Dictionary) -> String: return e["id"])
-	_check(_entry(entries, "pebblenook").get("enabled", false) and not ("test_island" in ids),
-			"on Test Island the menu offers Pebblenook (and not Test Island)")
+	_check(_entry(entries, "pebblenook").get("enabled", false) and _entry(entries, "test_island").get("tag", "") == "You are here"
+			and not _entry(entries, "test_island").get("enabled", true),
+			"on Test Island the menu offers Pebblenook, and Test Island says \"You are here\"")
 	_check(_menu.choose("pebblenook"), "Pebblenook can be picked")
 	await _frames(40)
 	var skip_ms := Time.get_ticks_msec()

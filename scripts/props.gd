@@ -55,6 +55,8 @@ static func build(p: Dictionary) -> Node3D:
 			return simple(T + "stall-green.glb", 0.9, 0.0, p.get("rot", 0.0))
 		"launch":
 			return launch_point(p["dir"])
+		"launch_flag":
+			return launch_flag(p["dir"])
 	push_error("Unknown prop type: %s" % p["type"])
 	return null
 
@@ -202,12 +204,99 @@ static func simple(path: String, fill: float, max_height: float, rot_y := 0.0) -
 	return root
 
 
-## Launch point: the Platformer Kit wooden pallet ramp, filling its edge
-## tile, high end pointing out over the edge (`dir`, towards the sky).
-## The model rises towards its -z; its top end is about 1.1 m high.
+## Launch point, on an edge tile. Built in a frame where -z points out to
+## the sky (`dir`), then turned to face it:
+##  - a gentle wooden ramp (Platformer Kit pallet ramp) rising to the edge
+##  - a plank lip (Fantasy Town Kit planks) that overhangs the edge by
+##    LAUNCH_OVERHANG metres, held up by two wooden braces (simple shapes)
+##  - rope rails along both sides (Platformer Kit rope fence)
 static func launch_point(dir: Vector2i) -> Node3D:
-	var rot := {Vector2i(0, -1): 0.0, Vector2i(-1, 0): 90.0, Vector2i(0, 1): 180.0, Vector2i(1, 0): -90.0}[dir] as float
-	return simple(P + "platform-ramp.glb", 0.975, 0.0, rot)
+	var root := _root()
+	var frame := _launch_frame(root, dir)
+	# Ramp: high end flush with the tile's sky edge.
+	var ramp := _scaled(P + "platform-ramp.glb", Vector3.ONE * LAUNCH_RAMP_SCALE, 0.0)
+	var ramp_size: Vector3 = ramp.get_meta("size")
+	ramp.position = Vector3(0.0, 0.0, -1.0 + ramp_size.z / 2.0)
+	frame.add_child(ramp)
+	# Lip: planks continuing the ramp's top out over the edge.
+	var lip := _scaled(T + "planks.glb", Vector3(ramp_size.x / 1.0, 1.5, LAUNCH_OVERHANG), 0.0)
+	var lip_size: Vector3 = lip.get_meta("size")
+	lip.position = Vector3(0.0, ramp_size.y - lip_size.y, -1.0 - LAUNCH_OVERHANG / 2.0)
+	frame.add_child(lip)
+	# Two braces from the grass at the edge up under the end of the lip.
+	for x in [-0.4, 0.4]:
+		frame.add_child(_rod(Vector3(x, 0.06, -0.97), Vector3(x, ramp_size.y - lip_size.y - 0.03, -1.0 - LAUNCH_OVERHANG + 0.12), 0.05, LAUNCH_WOOD))
+	# Rope rails along both sides of the ramp.
+	for side in [-1.0, 1.0]:
+		var rail := _scaled(P + "fence-rope.glb", Vector3(ramp_size.z / 0.95, 3.0, 1.6), 90.0)
+		var rail_size: Vector3 = rail.get_meta("size")
+		rail.position = Vector3(side * (ramp_size.x / 2.0 + 0.03 + rail_size.x / 2.0), 0.0, ramp.position.z)
+		frame.add_child(rail)
+	_collider_from_model(root)
+	return root
+
+
+## Flag and signpost on the tile beside the launch point: Platformer Kit
+## flag at the back, Survival Kit signpost pointing out to the sky.
+static func launch_flag(dir: Vector2i) -> Node3D:
+	var root := _root()
+	var frame := _launch_frame(root, dir)
+	var flag := _scaled(P + "flag.glb", Vector3.ONE * 2.6, 90.0)  # cloth flies out to the sky
+	flag.position = Vector3(0.25, 0.0, -0.45)
+	frame.add_child(flag)
+	var sign := _scaled(S + "signpost-single.glb", Vector3.ONE * 3.0, -90.0)
+	sign.position = Vector3(-0.45, 0.0, 0.45)
+	frame.add_child(sign)
+	_collider_from_model(root)
+	return root
+
+
+const LAUNCH_RAMP_SCALE := 1.2
+## How far (m) the launch lip sticks out past the island's edge.
+const LAUNCH_OVERHANG := 0.9
+const LAUNCH_WOOD := Color(0.62, 0.38, 0.24)
+
+
+## A child of root's Model, turned so its -z points along `dir`.
+static func _launch_frame(root: Node3D, dir: Vector2i) -> Node3D:
+	var frame := Node3D.new()
+	frame.name = "Frame"
+	frame.rotation_degrees.y = {Vector2i(0, -1): 0.0, Vector2i(-1, 0): 90.0, Vector2i(0, 1): 180.0, Vector2i(1, 0): -90.0}[dir] as float
+	(root.get_node("Model") as Node3D).add_child(frame)
+	return frame
+
+
+## A model at a (possibly non-uniform) scale, turned, centred on its holder
+## in x/z with its lowest point at y = 0. The holder's meta "size" is its size.
+static func _scaled(path: String, scale: Vector3, rot_y: float) -> Node3D:
+	var holder := Node3D.new()
+	holder.name = path.get_file().get_basename()
+	var model := ModelLib.instance(path)
+	model.scale = scale
+	holder.add_child(model)
+	holder.rotation_degrees.y = rot_y
+	var box := ModelUtil.aabb_in(model, holder)
+	model.position = Vector3(-box.get_center().x, -box.position.y, -box.get_center().z)
+	var turned := Basis(Vector3.UP, deg_to_rad(rot_y)) * box.size
+	holder.set_meta("size", turned.abs())
+	return holder
+
+
+## A thin wooden rod between two points (simple shape).
+static func _rod(from: Vector3, to: Vector3, radius: float, color: Color) -> MeshInstance3D:
+	var mi := MeshInstance3D.new()
+	mi.name = "Brace"
+	var cyl := CylinderMesh.new()
+	cyl.top_radius = radius
+	cyl.bottom_radius = radius
+	cyl.height = from.distance_to(to)
+	cyl.radial_segments = 8
+	mi.mesh = cyl
+	mi.material_override = MeshUtil.color_material(color)
+	var up := (to - from).normalized()
+	var side := up.cross(Vector3.RIGHT if absf(up.dot(Vector3.RIGHT)) < 0.9 else Vector3.FORWARD).normalized()
+	mi.transform = Transform3D(Basis(side, up, side.cross(up)), (from + to) / 2.0)
+	return mi
 
 
 # ---------------------------------------------------------------- helpers

@@ -3,7 +3,9 @@ extends SceneTree
 ##  - two objects (props, launch point, villagers) share a tile
 ##  - an island has no launch point, or it isn't on an edge tile, or it
 ##    doesn't point out at open sky
-##  - the launch ramp isn't flush on the ground or spills out of its tile
+##  - the launch ramp isn't flush on the ground, spills out of its tile other
+##    than its lip over the sky, or its lip doesn't really overhang the edge
+##  - the flag / signpost isn't beside the launch point
 ##  - the landing tile isn't free ground (something stands on it, it's a door
 ##    tile, or it's off the island), isn't right in front of the ramp, or
 ##    can't be reached from the island's start / from every open tile
@@ -53,7 +55,7 @@ func _check_island(island: Node3D) -> void:
 	for p in island.get_node("Props").get_children():
 		var cell: Vector2i = p.get_meta("cell")
 		var size: Vector2i = p.get_meta("size")
-		if String(p.name).begins_with("launch"):
+		if String(p.name).begins_with("launch_") and not String(p.name).begins_with("launch_flag"):
 			launch = p
 		for dz in size.y:
 			for dx in size.x:
@@ -83,8 +85,24 @@ func _check_island(island: Node3D) -> void:
 	_expect(absf(box.position.y) <= TOL, "launch ramp sits flush on the ground (%.3f)" % box.position.y)
 	var c := Grid.cell_center(cell, map_size)
 	var tile := Rect2(Vector2(c.x, c.z) - Vector2.ONE * Grid.TILE / 2.0, Vector2.ONE * Grid.TILE)
-	_expect(tile.grow(TOL).encloses(Rect2(Vector2(box.position.x, box.position.z), Vector2(box.size.x, box.size.z))),
-			"launch ramp stays inside its tile")
+	# Only the lip may stick out, and only towards the sky by its set amount.
+	var amount: float = launch.get_meta("overhang", 0.0)
+	var allowed := tile.grow(TOL).grow_individual(maxf(0.0, -dir.x) * amount, maxf(0.0, -dir.y) * amount,
+			maxf(0.0, dir.x) * amount, maxf(0.0, dir.y) * amount)
+	var model_rect := Rect2(Vector2(box.position.x, box.position.z), Vector2(box.size.x, box.size.z))
+	_expect(allowed.encloses(model_rect), "launch point stays in its tile apart from the lip over the sky")
+	var reach := (model_rect.end.x - tile.end.x) if dir.x > 0 else (tile.position.x - model_rect.position.x) if dir.x < 0 			else (model_rect.end.y - tile.end.y) if dir.y > 0 else (tile.position.y - model_rect.position.y)
+	_expect(reach > amount * 0.8, "the launch lip really overhangs the edge (%.2f m)" % reach)
+	# Flag and signpost on a tile beside the launch point, along the edge.
+	var flag: Node3D = null
+	for p in island.get_node("Props").get_children():
+		if String(p.name).begins_with("launch_flag"):
+			flag = p
+	_expect(flag != null, "the launch point has its flag and signpost")
+	if flag:
+		var fc: Vector2i = flag.get_meta("cell")
+		_expect((fc - cell).length_squared() == 1 and fc - cell != dir and fc - cell != -dir,
+				"the flag stands beside the launch point, along the edge (%s)" % fc)
 
 	# Landing tile: right in front of the ramp, free, reachable.
 	var landing: Vector2i = island.landing_cell
@@ -139,7 +157,7 @@ func _break_things(island: Node3D) -> void:
 	else:
 		print("SELFTEST (%s): move the launch point inland" % island.island_id)
 		for p in props.get_children():
-			if String(p.name).begins_with("launch"):
+			if String(p.name).begins_with("launch_") and not String(p.name).begins_with("launch_flag"):
 				p.set_meta("cell", Vector2i(4, 3))
 				island.launch_cell = Vector2i(4, 3)
 				break

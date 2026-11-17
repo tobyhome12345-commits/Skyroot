@@ -1,7 +1,8 @@
 extends CanvasLayer
 ## Destination menu (autoload "TravelMenu"), opened from a launch point.
-## Lists every island in data/islands.json except the one you're on. Known
-## islands can be picked; unknown ones are greyed out as "Unknown".
+## Lists every island in data/islands.json. Known islands can be picked;
+## unknown ones are greyed out as "Unknown"; the one you're on is greyed out
+## with a "You are here" tag.
 ## Arrows / W S move, E / Enter / Space or a click pick, Esc closes.
 
 const CREAM := Color(0.99, 0.95, 0.86)
@@ -34,7 +35,9 @@ func is_open() -> bool:
 func entries() -> Array:
 	var out := []
 	for b in _buttons:
-		out.append({"id": b.get_meta("id"), "name": b.get_meta("name"), "enabled": not b.disabled, "text": b.text})
+		var tag := b.get_node_or_null("Tag") as Label
+		out.append({"id": b.get_meta("id"), "name": b.get_meta("name"), "enabled": not b.disabled,
+				"text": b.text, "tag": tag.text if tag else "", "here": b.get_meta("here", false)})
 	return out
 
 
@@ -45,13 +48,13 @@ func open(from_island: String) -> void:
 		b.queue_free()
 	_buttons.clear()
 	for island: Dictionary in Game.islands():
-		if island["id"] == from_island:
-			continue
+		var here: bool = island["id"] == from_island
 		var known: bool = island.get("known", false) and island.has("scene")
-		var b := _make_button(island["name"], known)
+		var b := _make_button(island["name"], known and not here, "You are here" if here else ("" if known else "Unknown"), here)
 		b.set_meta("id", island["id"])
 		b.set_meta("name", island["name"])
-		if known:
+		b.set_meta("here", here)
+		if known and not here:
 			b.pressed.connect(_choose.bind(island["id"]))
 		_list.add_child(b)
 		_buttons.append(b)
@@ -179,13 +182,15 @@ func _build() -> void:
 	col.add_child(hint)
 
 
-func _make_button(island_name: String, known: bool) -> Button:
+## One menu entry. `tag` is the small label on the right ("Unknown", or the
+## orange "You are here" pill on the current island).
+func _make_button(island_name: String, enabled: bool, tag := "", here := false) -> Button:
 	var b := Button.new()
 	b.text = island_name
-	b.disabled = not known
+	b.disabled = not enabled
 	b.custom_minimum_size = Vector2(0.0, 64.0)
 	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	b.focus_mode = Control.FOCUS_ALL if known else Control.FOCUS_NONE
+	b.focus_mode = Control.FOCUS_ALL if enabled else Control.FOCUS_NONE
 	b.add_theme_font_size_override("font_size", 32)
 	b.add_theme_color_override("font_color", INK)
 	b.add_theme_color_override("font_hover_color", CREAM)
@@ -198,19 +203,34 @@ func _make_button(island_name: String, known: bool) -> Button:
 	b.add_theme_stylebox_override("focus", _style(TAG, BORDER))
 	b.add_theme_stylebox_override("pressed", _style(TAG.darkened(0.1), BORDER))
 	b.add_theme_stylebox_override("disabled", _style(GREY_BG, GREY_INK))
-	if not known:
-		var unknown := Label.new()
-		unknown.text = "Unknown"
-		unknown.add_theme_font_size_override("font_size", 24)
-		unknown.add_theme_color_override("font_color", GREY_INK)
-		unknown.set_anchors_preset(Control.PRESET_CENTER_RIGHT)
-		unknown.offset_left = -130.0
-		unknown.offset_right = -22.0
-		unknown.offset_top = -16.0
-		unknown.offset_bottom = 16.0
-		unknown.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		unknown.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		b.add_child(unknown)
+	if tag != "":
+		var label := Label.new()
+		label.name = "Tag"
+		label.text = tag
+		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		label.set_anchors_preset(Control.PRESET_CENTER_RIGHT)
+		label.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+		label.grow_vertical = Control.GROW_DIRECTION_BOTH
+		label.offset_right = -18.0
+		label.offset_left = -18.0
+		if here:
+			# A small orange pill, so you can see at a glance where you are.
+			label.add_theme_font_size_override("font_size", 20)
+			label.add_theme_color_override("font_color", CREAM)
+			var pill := StyleBoxFlat.new()
+			pill.bg_color = TAG
+			pill.set_corner_radius_all(14)
+			pill.content_margin_left = 14
+			pill.content_margin_right = 14
+			pill.content_margin_top = 3
+			pill.content_margin_bottom = 4
+			label.add_theme_stylebox_override("normal", pill)
+		else:
+			label.add_theme_font_size_override("font_size", 24)
+			label.add_theme_color_override("font_color", GREY_INK)
+		b.add_child(label)
 	return b
 
 

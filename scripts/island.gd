@@ -69,9 +69,10 @@ func _map() -> Array[String]:
 	return PEBBLENOOK_MAP
 
 
-## The launch point: {"cell": edge tile, "dir": direction towards the sky}.
+## The launch point: {"cell": edge tile, "dir": direction towards the sky,
+## "flag": the tile beside it for its flag and signpost}.
 func _launch_layout() -> Dictionary:
-	return {"cell": Vector2i(15, 8), "dir": Vector2i(1, 0)}
+	return {"cell": Vector2i(15, 8), "dir": Vector2i(1, 0), "flag": Vector2i(15, 9)}
 
 
 ## Every prop on the island: type, top-left tile, footprint in tiles (size
@@ -331,6 +332,8 @@ func _place_props() -> void:
 		landing_cell = launch_cell - launch_dir
 		reserved[landing_cell] = "landing tile"
 		layout.push_front({"type": "launch", "cell": launch_cell, "dir": launch_dir})
+		if launch.has("flag"):
+			layout.insert(1, {"type": "launch_flag", "cell": launch["flag"], "dir": launch_dir})
 	var index := 0
 	for p in layout:
 		var cell: Vector2i = p["cell"]
@@ -346,6 +349,10 @@ func _place_props() -> void:
 		node.position = Grid.footprint_center(cell, size, map_size)
 		node.set_meta("cell", cell)
 		node.set_meta("size", size)
+		if p["type"] == "launch":
+			# The launch lip hangs out over the edge, towards the sky only.
+			node.set_meta("overhang_dir", p["dir"])
+			node.set_meta("overhang", Props.LAUNCH_OVERHANG)
 		props_root.add_child(node)
 
 

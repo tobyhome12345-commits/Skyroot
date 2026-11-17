@@ -130,6 +130,15 @@ func _check_model(prop: Node3D) -> AABB:
 	_expect(absf(bottom) <= GROUND_TOLERANCE,
 			"%s sits flush on the ground (lowest point y=%.3f)" % [prop.name, bottom])
 	var rect := _footprint_rect(prop).grow(OVERHANG_TOLERANCE)
+	if prop.has_meta("overhang_dir"):
+		# The launch lip may hang out past its tile, but only towards the
+		# sky, only by its set amount, and only over tiles with no ground.
+		var d: Vector2i = prop.get_meta("overhang_dir")
+		var amount: float = prop.get_meta("overhang")
+		rect = rect.grow_individual(maxf(0.0, -d.x) * amount, maxf(0.0, -d.y) * amount,
+				maxf(0.0, d.x) * amount, maxf(0.0, d.y) * amount)
+		var beyond: Vector2i = (prop.get_meta("cell") as Vector2i) + d
+		_expect(not _island.is_ground(beyond), "%s overhangs open sky only (tile %s)" % [prop.name, beyond])
 	var model_rect := Rect2(Vector2(box.position.x, box.position.z), Vector2(box.size.x, box.size.z))
 	_expect(rect.encloses(model_rect),
 			"%s stays inside its tiles (model %s, tiles %s)" % [prop.name, model_rect, _footprint_rect(prop)])

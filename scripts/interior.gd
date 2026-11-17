@@ -1,24 +1,27 @@
 extends Node3D
-## A house interior: an 8 x 8 tile room on the same grid as the island.
+## A house interior: a 6 x 6 tile room on the same grid as the island.
 ## Cutaway view: back and side walls only, no front wall or ceiling.
-## Furniture comes from the Kenney packs (see Assets/CREDITS.md); every
-## object snaps to whole tiles, one object per tile, flush on the floor.
+## Furniture comes from the Kenney packs (see Assets/CREDITS.md). Every object
+## snaps to whole tiles and owns its tiles (no sharing). Furniture that belongs
+## together (a kitchen counter run, a sofa with its coffee table, a bed and its
+## nightstand) is one object, so the pieces can stand close together.
 ## The exit door is on the front edge; the player enters on the tile behind it.
 
-const ROOM_SIZE := Vector2i(8, 8)
-const EXIT_CELL := Vector2i(3, 7)
-const ENTRANCE_CELL := Vector2i(3, 6)
+const ROOM_SIZE := Vector2i(6, 6)
+const EXIT_CELL := Vector2i(2, 5)
+const ENTRANCE_CELL := Vector2i(2, 4)
 ## Interior walls are Town modules stretched up to this height (m).
 const WALL_HEIGHT := 2.8
-## Furniture is drawn 1.25x its pack scale indoors so each piece fills its
-## tile (a bed spans 1 x 2 tiles, a desk 1 tile) and the room feels lived-in.
-const INTERIOR_SCALE := 1.25
+## Furniture is drawn 1.35x its pack scale indoors so pieces fill their tiles
+## and the room feels cozy, without getting cramped.
+const INTERIOR_SCALE := 1.35
 ## Furniture against a wall keeps this far (m) from the tile edge, which
 ## clears the wall and its window shutters.
 const WALL_CLEARANCE := 0.4
-const FLOOR_THICKNESS := 0.1
-## Gap kept between items standing next to each other inside one object.
-const PART_GAP := 0.05
+## Gap (m) between pieces standing side by side inside one object.
+const PART_GAP := 0.08
+## Rugs are scaled to fill this share of their footprint.
+const RUG_FILL := 0.9
 
 @export_enum("elder", "bedroom", "workshop", "library") var room := "elder"
 @export var player_path: NodePath
@@ -30,7 +33,7 @@ var map_size := ROOM_SIZE
 
 func _ready() -> void:
 	var data: Dictionary = _rooms()[room]
-	_build_environment(data)
+	_build_environment()
 	_build_floor()
 	_build_walls(data)
 	_build_exit()
@@ -41,130 +44,109 @@ func _ready() -> void:
 # ---------------------------------------------------------------- rooms
 
 ## The four rooms. Object fields:
-##   id      model ("F:" Furniture Kit, "S:" Survival, "T:" Town, "P:" Platformer)
-##   cell    top-left tile, size: footprint in tiles (default 1 x 1)
-##   rot     yaw in degrees (Furniture Kit models face +z, towards the camera)
-##   against "north" / "west" / "east": pushed back against that wall
-##   top     small items standing on the object's top: [id, Vector2 offset m, rot]
-##   parts   extra items on the floor next to it: [id, Vector2 offset m, rot]
-##   flat    rugs: walkable, no collider
-##   light   adds a warm lamp light at the top of the object
+##   id       one model ("F:" Furniture Kit, "S:" Survival, "T:" Town)
+##   row      several models side by side, touching: [[id, rot, top], ...]
+##            laid along x (axis "x", default) or along z (axis "z")
+##   cell     top-left tile; size: footprint in tiles (default 1 x 1)
+##   rot      yaw in degrees (Furniture Kit models face +z, towards the camera)
+##   against wall side(s) the object is pushed back against: "north", "west", "east"
+##   top      small items standing on the model's top: [[id, rot], ...]
+##   parts    pieces placed next to the main piece: [[id, rot, side, top], ...]
+##            side = "north" / "south" / "east" / "west"; "next-west" etc.
+##            places it next to the previous part instead (a chain)
+##   flat     rugs: walkable, no collider, scaled to fill the footprint
+##   light    adds a warm lamp light above the object
 func _rooms() -> Dictionary:
 	return {
 		# 1. The elder's home: cozy living room and kitchen.
 		"elder": {
-			"wall": "wall", "windows": [Vector2i(5, 0), Vector2i(0, 2), Vector2i(7, 1)],
+			"wall": "wall", "windows": [Vector2i(3, 0), Vector2i(0, 4), Vector2i(5, 1)],
 			"objects": [
-				{"id": "F:kitchenFridge", "cell": Vector2i(0, 0), "against": "north"},
-				{"id": "F:kitchenCabinet", "cell": Vector2i(1, 0), "against": "north",
-					"top": [["F:kitchenCoffeeMachine", Vector2(0.15, 0.0), 0.0]]},
-				{"id": "F:kitchenStove", "cell": Vector2i(2, 0), "against": "north"},
-				{"id": "F:kitchenSink", "cell": Vector2i(3, 0), "against": "north"},
-				{"id": "F:kitchenCabinet", "cell": Vector2i(4, 0), "against": "north",
-					"top": [["F:toaster", Vector2(0.0, 0.0), 0.0]]},
-				{"id": "F:bookcaseOpen", "cell": Vector2i(6, 0), "against": "north",
-					"top": [["F:books", Vector2(0.0, 0.0), 0.0]]},
-				{"id": "F:sideTableDrawers", "cell": Vector2i(5, 0), "against": "north",
-					"top": [["F:radio", Vector2(0.0, 0.0), 0.0]]},
-				{"id": "F:pottedPlant", "cell": Vector2i(7, 0), "against": "north"},
-				{"id": "F:pottedPlant", "cell": Vector2i(0, 1), "against": "west"},
-				{"id": "F:rugRound", "cell": Vector2i(1, 4), "size": Vector2i(2, 2), "flat": true},
-				{"id": "F:lampRoundFloor", "cell": Vector2i(7, 2), "against": "east", "light": true},
-				{"id": "F:table", "cell": Vector2i(1, 2), "size": Vector2i(2, 1),
-					"top": [["F:plantSmall1", Vector2(0.0, 0.0), 0.0]],
-					"parts": [["F:chair", Vector2(-1.4, 0.0), 90.0], ["F:chair", Vector2(1.4, 0.0), -90.0]]},
-				{"id": "F:rugRectangle", "cell": Vector2i(3, 3), "size": Vector2i(2, 2), "flat": true},
-				{"id": "F:loungeChair", "cell": Vector2i(5, 3), "rot": 90.0},
-				{"id": "F:tableCoffee", "cell": Vector2i(6, 3), "size": Vector2i(1, 2), "rot": 90.0,
-					"top": [["F:books", Vector2(0.0, -0.3), 30.0]]},
-				{"id": "F:loungeSofa", "cell": Vector2i(7, 3), "size": Vector2i(1, 2), "rot": -90.0, "against": "east"},
-				{"id": "F:sideTable", "cell": Vector2i(0, 4), "rot": 90.0, "against": "west",
-					"top": [["F:lampRoundTable", Vector2(0.0, 0.0), 0.0]], "light": true},
-				{"id": "F:coatRackStanding", "cell": Vector2i(0, 6)},
+				{"row": [["F:kitchenFridge", 0.0, []], ["F:kitchenCabinet", 0.0, [["F:kitchenCoffeeMachine", 0.0]]],
+						["F:kitchenStove", 0.0, []], ["F:kitchenSink", 0.0, []]],
+					"cell": Vector2i(0, 0), "size": Vector2i(3, 1), "against": ["north", "west"]},
+				{"id": "F:sideTableDrawers", "cell": Vector2i(3, 0), "against": ["north"],
+					"top": [["F:radio", 0.0]]},
+				{"row": [["F:bookcaseOpen", 0.0, [["F:books", 0.0]]], ["F:pottedPlant", 0.0, []]],
+					"cell": Vector2i(4, 0), "size": Vector2i(2, 1), "against": ["north", "east"]},
+				{"id": "F:table", "cell": Vector2i(0, 1), "size": Vector2i(2, 1),
+					"top": [["F:plantSmall1", 0.0]],
+					"parts": [["F:chair", 90.0, "west", []], ["F:chair", -90.0, "east", []]]},
+				{"id": "F:loungeSofa", "cell": Vector2i(3, 2), "size": Vector2i(3, 2), "rot": -90.0, "against": ["east"],
+					"parts": [["F:tableCoffee", 90.0, "west", [["F:books", 30.0]]], ["F:loungeChair", 90.0, "next-west", []]]},
+				{"id": "F:rugRectangle", "cell": Vector2i(1, 2), "size": Vector2i(2, 1), "flat": true},
+				{"id": "F:sideTable", "cell": Vector2i(0, 3), "rot": 90.0, "against": ["west"],
+					"top": [["F:lampRoundTable", 0.0]], "light": true},
+				{"id": "F:coatRackStanding", "cell": Vector2i(0, 5)},
+				{"id": "F:lampRoundFloor", "cell": Vector2i(5, 4), "against": ["east"], "light": true},
+				{"id": "F:pottedPlant", "cell": Vector2i(5, 5), "against": ["east"]},
 			],
 		},
 		# 2. A young villager's bedroom.
 		"bedroom": {
-			"wall": "wall-wood", "windows": [Vector2i(4, 0), Vector2i(7, 4)],
+			"wall": "wall-wood", "windows": [Vector2i(2, 0), Vector2i(5, 3)],
 			"objects": [
-				{"id": "F:bedSingle", "cell": Vector2i(0, 0), "size": Vector2i(1, 2), "against": "north"},
-				{"id": "F:cabinetBed", "cell": Vector2i(1, 0), "against": "north",
-					"top": [["F:lampSquareTable", Vector2(0.0, 0.0), 0.0]], "light": true},
-				{"id": "F:desk", "cell": Vector2i(3, 0), "against": "north",
-					"top": [["F:laptop", Vector2(-0.25, 0.0), 0.0], ["F:books", Vector2(0.45, 0.05), -15.0]]},
-				{"id": "F:chairDesk", "cell": Vector2i(3, 1), "rot": 180.0},
-				{"id": "F:bookcaseOpen", "cell": Vector2i(5, 0), "against": "north",
-					"top": [["F:books", Vector2(0.0, 0.0), 0.0]]},
-				{"id": "F:bookcaseClosedDoors", "cell": Vector2i(6, 0), "against": "north"},
-				{"id": "F:bookcaseClosedDoors", "cell": Vector2i(7, 0), "against": "north"},
-				{"id": "F:sideTable", "cell": Vector2i(0, 4), "rot": 90.0, "against": "west",
-					"top": [["F:plantSmall1", Vector2(0.0, 0.0), 0.0]]},
-				{"id": "F:lampRoundFloor", "cell": Vector2i(7, 5), "against": "east", "light": true},
-				{"id": "F:bear", "cell": Vector2i(0, 2), "rot": 90.0, "against": "west"},
-				{"id": "F:rugRound", "cell": Vector2i(3, 3), "size": Vector2i(2, 2), "flat": true},
-				{"id": "F:bookcaseOpenLow", "cell": Vector2i(7, 2), "rot": -90.0, "against": "east",
-					"top": [["F:radio", Vector2(0.0, 0.0), -90.0]]},
-				{"id": "F:plantSmall2", "cell": Vector2i(7, 3), "against": "east"},
-				{"id": "F:cardboardBoxClosed", "cell": Vector2i(7, 6)},
+				{"id": "F:bedSingle", "cell": Vector2i(0, 0), "size": Vector2i(2, 2), "against": ["north", "west"],
+					"parts": [["F:cabinetBed", 0.0, "east", [["F:lampSquareTable", 0.0]]]], "light": true},
+				{"id": "F:desk", "cell": Vector2i(2, 0), "size": Vector2i(1, 2), "against": ["north"],
+					"top": [["F:laptop", 0.0], ["F:books", -15.0]],
+					"parts": [["F:chairDesk", 180.0, "south", []]]},
+				{"row": [["F:bookcaseOpen", 0.0, [["F:books", 0.0]]], ["F:bookcaseClosedDoors", 0.0, []],
+						["F:bookcaseClosedDoors", 0.0, []]],
+					"cell": Vector2i(3, 0), "size": Vector2i(3, 1), "against": ["north", "east"]},
+				{"id": "F:bear", "cell": Vector2i(0, 2), "rot": 90.0, "against": ["west"]},
+				{"id": "F:rugRound", "cell": Vector2i(2, 2), "size": Vector2i(2, 2), "flat": true},
+				{"row": [["F:bookcaseOpenLow", -90.0, [["F:radio", -90.0]]], ["F:pottedPlant", 0.0, []]],
+					"axis": "z", "cell": Vector2i(5, 1), "size": Vector2i(1, 2), "against": ["east"]},
+				{"id": "F:sideTable", "cell": Vector2i(0, 3), "rot": 90.0, "against": ["west"],
+					"top": [["F:plantSmall1", 0.0]]},
+				{"id": "F:lampRoundFloor", "cell": Vector2i(5, 4), "against": ["east"], "light": true},
+				{"id": "F:cardboardBoxClosed", "cell": Vector2i(0, 5), "against": ["west"]},
 			],
 		},
 		# 3. The tinkerer's workshop.
 		"workshop": {
-			"wall": "wall-wood", "windows": [Vector2i(3, 0), Vector2i(0, 3)],
+			"wall": "wall-wood", "windows": [Vector2i(0, 2), Vector2i(5, 3)],
 			"objects": [
-				{"id": "F:lampSquareFloor", "cell": Vector2i(0, 0), "against": "north", "light": true},
-				{"id": "S:workbench", "cell": Vector2i(1, 0), "against": "north",
-					"top": [["S:tool-hammer", Vector2(0.0, 0.0), 30.0]]},
-				{"id": "S:workbench-anvil", "cell": Vector2i(2, 0), "against": "north"},
-				{"id": "S:workbench-grind", "cell": Vector2i(4, 0), "against": "north"},
-				{"id": "S:workbench", "cell": Vector2i(5, 0), "against": "north",
-					"top": [["S:tool-shovel", Vector2(0.0, 0.0), 0.0]]},
-				{"id": "F:bookcaseOpenLow", "cell": Vector2i(0, 3), "rot": 90.0, "against": "west",
-					"top": [["S:bottle", Vector2(0.0, 0.0), 0.0]]},
-				{"id": "S:barrel", "cell": Vector2i(1, 6)},
-				{"id": "F:lampSquareFloor", "cell": Vector2i(7, 3), "against": "east", "light": true},
-				{"id": "F:bookcaseOpen", "cell": Vector2i(6, 0), "against": "north",
-					"top": [["S:box", Vector2(0.0, 0.0), 10.0]]},
-				{"id": "F:bookcaseOpen", "cell": Vector2i(7, 0), "against": "north",
-					"top": [["S:bucket", Vector2(0.0, 0.0), 0.0]]},
-				{"id": "S:chest", "cell": Vector2i(0, 2), "rot": 90.0, "against": "west"},
-				{"id": "F:table", "cell": Vector2i(3, 3), "size": Vector2i(2, 1),
-					"top": [["S:tool-axe", Vector2(-0.45, 0.0), 0.0], ["S:tool-pickaxe", Vector2(0.4, 0.0), 0.0]]},
-				{"id": "S:barrel", "cell": Vector2i(0, 5)},
-				{"id": "S:barrel-open", "cell": Vector2i(0, 6)},
-				{"id": "S:box-large", "cell": Vector2i(7, 5)},
-				{"id": "S:box", "cell": Vector2i(7, 6), "rot": 20.0},
-				{"id": "F:pottedPlant", "cell": Vector2i(7, 2), "against": "east"},
-				{"id": "S:box", "cell": Vector2i(6, 6), "rot": -15.0},
+				{"row": [["F:lampSquareFloor", 0.0, []], ["S:workbench", 0.0, [["S:tool-hammer", 30.0]]],
+						["S:workbench-anvil", 0.0, []]],
+					"cell": Vector2i(0, 0), "size": Vector2i(3, 1), "against": ["north", "west"], "light": true},
+				{"row": [["S:workbench-grind", 0.0, []], ["S:workbench", 0.0, [["S:tool-shovel", 0.0]]],
+						["F:bookcaseOpen", 0.0, [["S:box", 10.0]]]],
+					"cell": Vector2i(3, 0), "size": Vector2i(3, 1), "against": ["north", "east"]},
+				{"row": [["S:chest", 90.0, []], ["F:bookcaseOpenLow", 90.0, [["S:bottle", 0.0]]]],
+					"axis": "z", "cell": Vector2i(0, 1), "size": Vector2i(1, 2), "against": ["west"]},
+				{"id": "F:table", "cell": Vector2i(2, 2), "size": Vector2i(2, 1),
+					"top": [["S:tool-axe", 0.0], ["S:tool-pickaxe", 0.0]]},
+				{"row": [["S:barrel", 0.0, []], ["S:barrel-open", 0.0, []]],
+					"axis": "z", "cell": Vector2i(0, 4), "size": Vector2i(1, 2), "against": ["west"]},
+				{"row": [["S:box-large", 0.0, []], ["S:box", 20.0, []]],
+					"axis": "z", "cell": Vector2i(5, 4), "size": Vector2i(1, 2), "against": ["east"]},
+				{"id": "F:lampSquareFloor", "cell": Vector2i(5, 2), "against": ["east"], "light": true},
+				{"id": "F:pottedPlant", "cell": Vector2i(5, 1), "against": ["east"]},
 			],
 		},
 		# 4. A study / library with a fireplace.
 		"library": {
-			"wall": "wall", "windows": [Vector2i(0, 3), Vector2i(7, 1)],
+			"wall": "wall", "windows": [Vector2i(0, 4), Vector2i(5, 4)],
 			"objects": [
-				{"id": "F:bookcaseClosed", "cell": Vector2i(0, 0), "against": "north"},
-				{"id": "F:bookcaseOpen", "cell": Vector2i(1, 0), "against": "north",
-					"top": [["F:books", Vector2(0.0, 0.0), 0.0]]},
-				{"type": "fireplace", "cell": Vector2i(3, 0), "size": Vector2i(2, 1)},
-				{"id": "F:bookcaseOpen", "cell": Vector2i(6, 0), "against": "north",
-					"top": [["F:books", Vector2(0.0, 0.0), 20.0]]},
-				{"id": "F:bookcaseClosed", "cell": Vector2i(7, 0), "against": "north"},
-				{"id": "F:bookcaseOpen", "cell": Vector2i(0, 1), "rot": 90.0, "against": "west",
-					"top": [["F:books", Vector2(0.0, 0.0), 0.0]]},
-				{"id": "F:bookcaseOpenLow", "cell": Vector2i(0, 2), "rot": 90.0, "against": "west",
-					"top": [["F:plantSmall3", Vector2(0.0, 0.0), 0.0]]},
-				{"id": "F:sideTable", "cell": Vector2i(1, 4), "rot": 90.0,
-					"top": [["F:books", Vector2(0.0, 0.0), 45.0]]},
-				{"id": "F:pottedPlant", "cell": Vector2i(2, 0), "against": "north"},
-				{"id": "F:bookcaseOpen", "cell": Vector2i(7, 2), "rot": -90.0, "against": "east",
-					"top": [["F:books", Vector2(0.0, 0.0), 0.0]]},
-				{"id": "F:loungeChair", "cell": Vector2i(0, 4), "rot": 90.0, "against": "west"},
-				{"id": "F:lampRoundFloor", "cell": Vector2i(0, 5), "light": true},
-				{"id": "F:rugRectangle", "cell": Vector2i(2, 3), "size": Vector2i(2, 2), "flat": true},
-				{"id": "F:desk", "cell": Vector2i(7, 3), "rot": -90.0, "against": "east",
-					"top": [["F:lampSquareTable", Vector2(0.0, -0.4), 0.0], ["F:books", Vector2(0.0, 0.35), 90.0]], "light": true},
-				{"id": "F:chairDesk", "cell": Vector2i(6, 3), "rot": 90.0},
-				{"id": "F:pottedPlant", "cell": Vector2i(7, 6)},
+				{"row": [["F:bookcaseClosed", 0.0, []], ["F:bookcaseOpen", 0.0, [["F:books", 0.0]]]],
+					"cell": Vector2i(0, 0), "size": Vector2i(2, 1), "against": ["north", "west"]},
+				{"type": "fireplace", "cell": Vector2i(2, 0), "size": Vector2i(2, 2), "against": ["north"]},
+				{"row": [["F:bookcaseOpen", 0.0, [["F:books", 20.0]]], ["F:bookcaseClosed", 0.0, []]],
+					"cell": Vector2i(4, 0), "size": Vector2i(2, 1), "against": ["north", "east"]},
+				{"row": [["F:bookcaseOpen", 90.0, [["F:books", 90.0]]], ["F:bookcaseOpenLow", 90.0, [["F:plantSmall3", 0.0]]]],
+					"axis": "z", "cell": Vector2i(0, 1), "size": Vector2i(1, 2), "against": ["west"]},
+				{"id": "F:loungeChair", "cell": Vector2i(0, 3), "size": Vector2i(2, 1), "rot": 90.0, "against": ["west"],
+					"parts": [["F:sideTable", 90.0, "east", [["F:books", 45.0]]]]},
+				{"id": "F:lampRoundFloor", "cell": Vector2i(0, 4), "against": ["west"], "light": true},
+				{"id": "F:rugRectangle", "cell": Vector2i(2, 2), "size": Vector2i(2, 2), "flat": true},
+				{"id": "F:desk", "cell": Vector2i(4, 1), "size": Vector2i(2, 1), "rot": -90.0, "against": ["east"],
+					"top": [["F:lampSquareTable", 0.0], ["F:books", 90.0]], "light": true,
+					"parts": [["F:chairDesk", 90.0, "west", []]]},
+				{"id": "F:bookcaseOpen", "cell": Vector2i(5, 3), "rot": -90.0, "against": ["east"],
+					"top": [["F:books", 0.0]]},
+				{"id": "F:pottedPlant", "cell": Vector2i(5, 5), "against": ["east"]},
 			],
 		},
 	}
@@ -188,9 +170,9 @@ func room_cells() -> Array[Vector2i]:
 	return cells
 
 
-# ---------------------------------------------------------------- building
+# ---------------------------------------------------------------- room shell
 
-func _build_environment(_data: Dictionary) -> void:
+func _build_environment() -> void:
 	var env := Environment.new()
 	env.background_mode = Environment.BG_COLOR
 	env.background_color = Color(0.09, 0.065, 0.05)
@@ -210,15 +192,15 @@ func _build_environment(_data: Dictionary) -> void:
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)
-	# Warm main light above the middle of the room, plus a soft fill.
+	# Warm main light above the room, plus a soft fill for shadows.
 	var main := OmniLight3D.new()
 	main.name = "RoomLight"
 	main.light_color = Color(1.0, 0.8, 0.58)
 	main.light_energy = 2.2
-	main.omni_range = 18.0
+	main.omni_range = 16.0
 	main.omni_attenuation = 0.8
 	main.shadow_enabled = true
-	main.position = cell_center(Vector2i(4, 3)) + Vector3(-1.0, 6.0, 1.0)
+	main.position = Vector3(0.0, 6.0, 0.0)
 	add_child(main)
 	var fill := DirectionalLight3D.new()
 	fill.name = "Fill"
@@ -231,7 +213,7 @@ func _build_environment(_data: Dictionary) -> void:
 
 ## Board floor, one tile at a time, top flush at y = 0: Fantasy Town Kit
 ## plank boards laid over a Furniture Kit floor tile (darkened), so the gaps
-## between the boards read as seams. Boards alternate direction per row.
+## between the boards read as seams.
 func _build_floor() -> void:
 	var floor_root := Node3D.new()
 	floor_root.name = "Floor"
@@ -333,6 +315,8 @@ func _build_exit() -> void:
 	trigger.setup(centre, Vector3(0.0, 2.6, Grid.TILE / 2.0), Game.exit_house)
 
 
+# ---------------------------------------------------------------- objects
+
 func _build_objects(data: Dictionary) -> void:
 	var objects := Node3D.new()
 	objects.name = "Objects"
@@ -341,17 +325,36 @@ func _build_objects(data: Dictionary) -> void:
 	for o: Dictionary in data["objects"]:
 		var cell: Vector2i = o["cell"]
 		var size: Vector2i = o.get("size", Vector2i.ONE)
-		var label: String = o.get("type", (o.get("id", "?") as String).get_slice(":", 1))
+		var label := _label(o)
 		var obj_name := "%s_%d" % [label, index]
 		index += 1
 		if not _claim(cell, size, obj_name):
 			continue
-		var node := _build_fireplace(size) if o.get("type", "") == "fireplace" else _build_object(o, size)
+		var node: Node3D
+		if o.get("type", "") == "fireplace":
+			node = _build_fireplace()
+		else:
+			node = _build_object(o)
 		node.name = obj_name
 		node.position = Grid.footprint_center(cell, size, ROOM_SIZE)
+		_fit_into_footprint(node, size, o.get("against", []))
+		if not o.get("flat", false):
+			_collider_from_model(node)
+		else:
+			node.set_meta("solid", false)
+		if o.get("light", false):
+			_add_lamp_light(node)
 		node.set_meta("cell", cell)
 		node.set_meta("size", size)
 		objects.add_child(node)
+
+
+func _label(o: Dictionary) -> String:
+	if o.has("type"):
+		return o["type"]
+	if o.has("row"):
+		return "row"
+	return (o["id"] as String).get_slice(":", 1)
 
 
 ## One footprint can't hold two objects, and the entrance/exit stay clear.
@@ -374,84 +377,133 @@ func _claim(cell: Vector2i, size: Vector2i, obj_name: String) -> bool:
 	return true
 
 
-func _build_object(o: Dictionary, size: Vector2i) -> Node3D:
+## Builds an object's models around its own origin; `_fit_into_footprint`
+## then moves the whole group into place.
+func _build_object(o: Dictionary) -> Node3D:
 	var root := _object_root()
 	var model := root.get_node("Model") as Node3D
-	var main: Array = ModelLib.placed(o["id"], o.get("rot", 0.0), INTERIOR_SCALE)
-	var main_node: Node3D = main[0]
-	var main_size: Vector3 = main[1]
-	main_node.position = _against_offset(o.get("against", ""), size, main_size)
-	model.add_child(main_node)
-	_warn_if_too_big(o["id"], size, main_size)
-	# Small items stand exactly on the object's top surface.
-	for t: Array in o.get("top", []):
-		var item: Array = ModelLib.placed(t[0], t[2], INTERIOR_SCALE)
-		var item_node: Node3D = item[0]
-		var off: Vector2 = t[1]
-		item_node.position = main_node.position + Vector3(off.x, main_size.y, off.y)
-		model.add_child(item_node)
-	# Extra items on the floor beside it (e.g. chairs around a table).
+	if o.has("row"):
+		var axis: String = o.get("axis", "x")
+		var cursor := 0.0
+		for entry: Array in o["row"]:
+			var piece := _add_piece(model, entry[0], entry[1], entry[2])
+			var size: Vector3 = piece.get_meta("size")
+			var length := size.x if axis == "x" else size.z
+			if axis == "x":
+				piece.position.x = cursor + length / 2.0
+			else:
+				piece.position.z = cursor + length / 2.0
+			_move_tops(piece)  # keep its small items on top of it
+			cursor += length + PART_GAP
+		return root
+	var flat: bool = o.get("flat", false)
+	var main := _add_piece(model, o["id"], o.get("rot", 0.0), o.get("top", []), flat, o.get("size", Vector2i.ONE))
+	# Parts stand next to the main piece, centred on it, with a small gap;
+	# a side starting with "next-" puts it next to the previous part instead.
+	var previous := main
 	for p: Array in o.get("parts", []):
-		var part: Array = ModelLib.placed(p[0], p[2], INTERIOR_SCALE)
-		var part_node: Node3D = part[0]
-		var off: Vector2 = p[1]
-		part_node.position = main_node.position + Vector3(off.x, 0.0, off.y)
-		model.add_child(part_node)
-	if o.get("light", false):
-		_add_lamp_light(root, ModelUtil.aabb_in(model, root))
-	if o.get("flat", false):
-		root.set_meta("solid", false)
-	else:
-		_collider_from_model(root)
+		var piece := _add_piece(model, p[0], p[1], p[3])
+		var side: String = p[2]
+		var anchor := main
+		if side.begins_with("next-"):
+			anchor = previous
+			side = side.substr(5)
+		var a: Vector3 = anchor.get_meta("size")
+		var b: Vector3 = piece.get_meta("size")
+		var pos := anchor.position
+		match side:
+			"west":
+				pos.x -= a.x / 2.0 + PART_GAP + b.x / 2.0
+			"east":
+				pos.x += a.x / 2.0 + PART_GAP + b.x / 2.0
+			"north":
+				pos.z -= a.z / 2.0 + PART_GAP + b.z / 2.0
+			"south":
+				pos.z += a.z / 2.0 + PART_GAP + b.z / 2.0
+		piece.position = Vector3(pos.x, 0.0, pos.z)
+		_move_tops(piece)
+		previous = piece
 	return root
+
+
+## One model (centred, on the floor) plus the small items on its top.
+## Rugs (`flat`) are scaled to fill their footprint instead.
+func _add_piece(model: Node3D, id: String, rot: float, top: Array, flat := false, footprint := Vector2i.ONE) -> Node3D:
+	var scale_mult := INTERIOR_SCALE
+	if flat:
+		var probe: Array = ModelLib.placed(id, rot)
+		var raw: Vector3 = probe[1]
+		(probe[0] as Node).free()
+		var room_for := Vector2(footprint) * Grid.TILE * RUG_FILL
+		scale_mult = minf(room_for.x / raw.x, room_for.y / raw.z)
+	var placed: Array = ModelLib.placed(id, rot, scale_mult)
+	var node: Node3D = placed[0]
+	var size: Vector3 = placed[1]
+	node.set_meta("size", size)
+	model.add_child(node)
+	# Small items stand on the top surface, spread evenly along its width.
+	var tops: Array[Node3D] = []
+	for i in top.size():
+		var t: Array = top[i]
+		var item: Array = ModelLib.placed(t[0], t[1], INTERIOR_SCALE)
+		var item_node: Node3D = item[0]
+		var spread := 0.0
+		if top.size() > 1:
+			spread = (float(i) / float(top.size() - 1) - 0.5) * size.x * 0.5
+		item_node.set_meta("on_top_offset", Vector3(spread, size.y, 0.0))
+		model.add_child(item_node)
+		tops.append(item_node)
+	node.set_meta("tops", tops)
+	_move_tops(node)
+	return node
+
+
+func _move_tops(piece: Node3D) -> void:
+	for item: Node3D in piece.get_meta("tops", []):
+		item.position = piece.position + (item.get_meta("on_top_offset") as Vector3)
+
+
+## Moves the object's models so the group sits inside its footprint:
+## centred, or pushed back against the given walls (keeping WALL_CLEARANCE).
+func _fit_into_footprint(root: Node3D, size: Vector2i, against: Array) -> void:
+	var model := root.get_node("Model") as Node3D
+	var box := ModelUtil.aabb_in(model, root)
+	var half := Vector2(size) * Grid.TILE / 2.0
+	var shift := Vector3(-box.get_center().x, 0.0, -box.get_center().z)
+	if "north" in against:
+		shift.z = -half.y + WALL_CLEARANCE - box.position.z
+	if "west" in against:
+		shift.x = -half.x + WALL_CLEARANCE - box.position.x
+	if "east" in against:
+		shift.x = half.x - WALL_CLEARANCE - box.end.x
+	model.position += shift
+	box = ModelUtil.aabb_in(model, root)
+	if box.size.x > half.x * 2.0 or box.size.z > half.y * 2.0:
+		push_error("%s (%s) doesn't fit its %s tile footprint" % [root.name, box.size, size])
 
 
 ## Fireplace (no pack has one): a stone chimney stack from the Fantasy Town
 ## Kit against the back wall, with a Survival Kit fire pit on its hearth.
-func _build_fireplace(size: Vector2i) -> Node3D:
+func _build_fireplace() -> Node3D:
 	var root := _object_root()
 	var model := root.get_node("Model") as Node3D
-	var chimney: Array = ModelLib.placed("T:chimney-base", 90.0, INTERIOR_SCALE)
-	var chimney_node: Node3D = chimney[0]
-	var chimney_size: Vector3 = chimney[1]
-	chimney_node.position = _against_offset("north", size, chimney_size)
-	model.add_child(chimney_node)
-	var fire: Array = ModelLib.placed("S:campfire-pit", 0.0, INTERIOR_SCALE)
-	var fire_node: Node3D = fire[0]
-	var fire_size: Vector3 = fire[1]
-	fire_node.position = chimney_node.position + Vector3(0.0, 0.0, chimney_size.z / 2.0 + fire_size.z / 2.0 + PART_GAP)
-	model.add_child(fire_node)
+	var chimney := _add_piece(model, "T:chimney-base", 90.0, [])
+	var fire := _add_piece(model, "S:campfire-pit", 0.0, [])
+	var a: Vector3 = chimney.get_meta("size")
+	var b: Vector3 = fire.get_meta("size")
+	fire.position.z = a.z / 2.0 + PART_GAP + b.z / 2.0
 	var glow := OmniLight3D.new()
+	glow.name = "FireGlow"
 	glow.light_color = Color(1.0, 0.55, 0.25)
 	glow.light_energy = 2.0
 	glow.omni_range = 6.0
-	glow.position = fire_node.position + Vector3(0.0, 0.6, 0.3)
-	root.add_child(glow)
-	_collider_from_model(root)
+	glow.position = Vector3(0.0, 0.6, 0.3)
+	fire.add_child(glow)
 	return root
 
 
-## Where a model sits inside its footprint: centred, or pushed back against
-## a wall (keeping WALL_CLEARANCE from the tile edge).
-func _against_offset(side: String, size: Vector2i, model_size: Vector3) -> Vector3:
-	var half := Vector2(size) * Grid.TILE / 2.0
-	match side:
-		"north":
-			return Vector3(0.0, 0.0, -half.y + WALL_CLEARANCE + model_size.z / 2.0)
-		"west":
-			return Vector3(-half.x + WALL_CLEARANCE + model_size.x / 2.0, 0.0, 0.0)
-		"east":
-			return Vector3(half.x - WALL_CLEARANCE - model_size.x / 2.0, 0.0, 0.0)
-	return Vector3.ZERO
-
-
-func _warn_if_too_big(id: String, size: Vector2i, model_size: Vector3) -> void:
-	var room_for := Vector2(size) * Grid.TILE
-	if model_size.x > room_for.x or model_size.z > room_for.y:
-		push_error("%s (%s) doesn't fit its %s tile footprint" % [id, model_size, size])
-
-
-func _add_lamp_light(root: Node3D, box: AABB) -> void:
+func _add_lamp_light(root: Node3D) -> void:
+	var box := ModelUtil.aabb_in(root.get_node("Model"), root)
 	var lamp := OmniLight3D.new()
 	lamp.name = "LampLight"
 	lamp.light_color = Color(1.0, 0.72, 0.42)

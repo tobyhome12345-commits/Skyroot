@@ -1,0 +1,18 @@
+{
+	"name": "Bellamy the Chime-maker",
+	"model": "res://Assets/Mini Characters/Models/GLB format/character-male-d.glb",
+	"conversations": [
+		[
+			"Listen. ... Hear that? No? Me neither. That's the problem.",
+			"Leafwind used to sing all day. Every porch, every branch. Now it's so quiet I can hear my own knees."
+		],
+		[
+			"I tune every chime by ear. Then I wait for the wind to play them. I've been waiting a while.",
+			"I tap them myself sometimes, at night. Just so they don't forget what they're for."
+		],
+		[
+			"The old chimes had a song for the Great Tree. Three notes, rising. Like breathing in.",
+			"I can still play it. I just can't remember why it made everyone cry."
+		]
+	]
+}

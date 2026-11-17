@@ -1,0 +1,22 @@
+{
+	"name": "Old Captain Brisk",
+	"model": "res://Assets/Mini Characters/Models/GLB format/character-raider.glb",
+	"conversations": [
+		[
+			"Ahoy. I sailed the sky-currents forty years, from Barkton to the edge of the clouds.",
+			"Now the currents have stopped. A sailor with no wind is just a man sitting on a bench."
+		],
+		[
+			"See that cliff? That's where the Great Gust came from, every morning, regular as tea.",
+			"It's tied itself in a knot up there. Like a rope left in a sea-chest too long. Something's got to untangle it."
+		],
+		[
+			"My old crew sang a shanty about the Tree. 'Give her breath and she'll give you joy.'",
+			"Funny. I always thought it was just a song."
+		],
+		[
+			"Don't mind me, I'm just watching. A sailor knows: the wind always comes back.",
+			"...It does. Doesn't it?"
+		]
+	]
+}

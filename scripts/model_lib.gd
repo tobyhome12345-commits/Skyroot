@@ -13,10 +13,12 @@ const FURNITURE := "res://Assets/Furniture Kit/Models/GLTF format/"
 ## Fixed scales that keep every pack at the same world size as the island
 ## (Furniture Kit: 1 unit = one tile, like the Town houses; Survival Kit items
 ## are modelled smaller, so they need 3x to stand next to furniture).
-const PACK_SCALE := {"F": 2.0, "T": 2.0, "S": 3.0, "P": 2.0, "C": 1.0}
+## Food Kit ("K") pieces are modelled big for table-top food, so they are shrunk.
+const PACK_SCALE := {"F": 2.0, "T": 2.0, "S": 3.0, "P": 2.0, "C": 1.0, "K": 0.35}
 const PACK_PATH := {
 	"F": FURNITURE, "T": TOWN, "S": SURVIVAL, "P": PLATFORMER,
 	"C": "res://Assets/Modular Cave/Models/GLB format/",
+	"K": "res://Assets/food kit/Models/GLB format/",
 }
 
 ## Fantasy Town Kit pieces are 1 unit modules; 2x makes one module = one tile.

@@ -5,7 +5,8 @@ extends SceneTree
 ## walking away hides the prompt.
 ## Usage: godot_console --headless --path . --script res://tools/test_doors.gd
 
-const MAIN := "res://scenes/pebblenook.tscn"
+## Islands with houses, and how many doors each has.
+const ISLANDS := {"res://scenes/pebblenook.tscn": 4, "res://scenes/leafwind.tscn": 3}
 
 var _failures := 0
 var _game: Node  # the Game autoload (looked up at runtime)
@@ -17,10 +18,17 @@ func _initialize() -> void:
 
 func _run() -> void:
 	_game = root.get_node("/root/Game")
-	change_scene_to_file(MAIN)
+	for scene: String in ISLANDS:
+		await _island_doors(scene, ISLANDS[scene])
+	print("RESULT: %s" % ("ALL PASSED" if _failures == 0 else "%d FAILED" % _failures))
+	quit(1 if _failures > 0 else 0)
+
+
+func _island_doors(scene: String, count: int) -> void:
+	change_scene_to_file(scene)
 	await _frames(10)
 	var doors: Array = current_scene.get_node("Island/Doors").get_children()
-	_check(doors.size() == 4, "4 house doors on the island (%d)" % doors.size())
+	_check(doors.size() == count, "%d house doors on %s (%d)" % [count, scene.get_file(), doors.size()])
 	var interiors := {}
 	for i in doors.size():
 		# Reload the island fresh each time (we come back to it anyway).
@@ -33,7 +41,7 @@ func _run() -> void:
 		var player := current_scene.get_node("Player") as CharacterBody3D
 
 		# Walk up to the door: its prompt shows, the others stay hidden.
-		player.spawn_at(Grid.cell_center(front, island.map_size))
+		player.spawn_at(island.to_global(island.cell_pos(front)))
 		await _physics(10)
 		_check(door.is_prompt_visible(), "[%s] prompt shows at the door" % label)
 		var others_hidden := true
@@ -69,21 +77,22 @@ func _run() -> void:
 		_check(exit_trigger.is_prompt_visible(), "[%s] exit prompt shows on the exit tile" % label)
 		await _press(KEY_E)
 		await _wait_unlocked()
-		_check(current_scene.scene_file_path == MAIN, "[%s] back on the island" % label)
+		_check(current_scene.scene_file_path == scene, "[%s] back on the island" % label)
 		var out_player := current_scene.get_node("Player") as CharacterBody3D
 		var out_cell := Grid.world_to_cell(out_player.global_position, current_scene.get_node("Island").map_size)
 		_check(out_cell == front, "[%s] back one tile in front of its door (%s, expected %s)" % [label, out_cell, front])
+		var out_island := current_scene.get_node("Island")
+		_check(absf(out_player.global_position.y - out_island.to_global(out_island.cell_pos(front)).y) < 0.05,
+				"[%s] back at the door's floor height (y=%.2f)" % [label, out_player.global_position.y])
 
 		# Walking away hides the prompt.
 		var back_door: Node = current_scene.get_node("Island/Doors").get_child(i)
 		await _physics(5)
 		_check(back_door.is_prompt_visible(), "[%s] prompt shows again when back at the door" % label)
-		out_player.spawn_at(Grid.cell_center(front + Vector2i(0, 1), current_scene.get_node("Island").map_size))
+		out_player.spawn_at(out_island.to_global(out_island.cell_pos(front + Vector2i(0, 1))))
 		await _physics(10)
 		_check(not back_door.is_prompt_visible(), "[%s] prompt hides after walking away" % label)
-	_check(interiors.size() == 4, "each house leads to a different interior (%d unique)" % interiors.size())
-	print("RESULT: %s" % ("ALL PASSED" if _failures == 0 else "%d FAILED" % _failures))
-	quit(1 if _failures > 0 else 0)
+	_check(interiors.size() == count, "each house leads to a different interior (%d unique)" % interiors.size())
 
 
 func _press(key: Key) -> void:

@@ -63,6 +63,9 @@ static func build(p: Dictionary) -> Node3D:
 			return launch_flag(p["dir"])
 		"nature":
 			return nature(p)
+	var leafwind := LeafwindProps.build(p)
+	if leafwind:
+		return leafwind
 	push_error("Unknown prop type: %s" % p["type"])
 	return null
 

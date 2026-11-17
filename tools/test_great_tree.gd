@@ -107,7 +107,7 @@ func _run() -> void:
 	_check(TreeLook.bark().albedo_color == bark0 and _shown(tree) == shown0, "setting health back to 0 restores the withered look")
 
 	# Distant tree on the other islands, cheap.
-	for path: String in ["res://scenes/pebblenook.tscn", "res://scenes/lookout_isle.tscn", "res://scenes/traders_rock.tscn", "res://scenes/seed_isle.tscn"]:
+	for path: String in ["res://scenes/pebblenook.tscn", "res://scenes/lookout_isle.tscn", "res://scenes/traders_rock.tscn", "res://scenes/seed_isle.tscn", "res://scenes/leafwind.tscn"]:
 		change_scene_to_file(path)
 		await _frames(10)
 		var dt := current_scene.find_child("DistantTree", true, false) as Node3D

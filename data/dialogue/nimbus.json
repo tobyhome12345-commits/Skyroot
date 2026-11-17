@@ -1,0 +1,21 @@
+{
+	"name": "Nimbus the Weather-watcher",
+	"model": "res://Assets/Mini Characters/Models/GLB format/character-male-b.glb",
+	"conversations": [
+		[
+			"Today's forecast: still. Tomorrow's forecast: still. I've started forecasting in pencil, to save ink."
+		],
+		[
+			"See that cliff to the north? Every breeze on Leafwind used to come pouring off it, like water off a roof.",
+			"Now there's something knotted up there. Wind, tangled in itself. I've watched it for weeks. It doesn't move."
+		],
+		[
+			"My weathervane used to spin so fast the children called it the Dizzy Rooster.",
+			"Now it points north. Always north. As if it's trying to tell me something."
+		],
+		[
+			"The calm started the same week the Great Tree's leaves went grey. I wrote it down.",
+			"I write everything down. It doesn't help, but it's tidy."
+		]
+	]
+}

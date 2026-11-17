@@ -54,7 +54,7 @@ static func create(id: String, tile_centre: Vector3, facing_degrees := 0.0) -> V
 		v.counter_key = id + "_recap"
 	v.position = tile_centre
 	v._target_yaw = deg_to_rad(facing_degrees)
-	v._build(data["model"])
+	v._build(data["model"], float(data.get("scale", 1.0)))
 	return v
 
 
@@ -81,13 +81,14 @@ static func load_dialogue(id: String) -> Dictionary:
 	return data
 
 
-func _build(model_path: String) -> void:
+## `size` shrinks children (their dialogue file gives "scale", e.g. 0.75).
+func _build(model_path: String, size := 1.0) -> void:
 	_visual = Node3D.new()
 	_visual.name = "Visual"
 	_visual.rotation.y = _target_yaw
 	add_child(_visual)
 	var model := ModelLib.instance(model_path)
-	model.scale = Vector3.ONE * MODEL_SCALE
+	model.scale = Vector3.ONE * MODEL_SCALE * size
 	_visual.add_child(model)
 	var anim := model.find_children("*", "AnimationPlayer", true, false)
 	if not anim.is_empty():

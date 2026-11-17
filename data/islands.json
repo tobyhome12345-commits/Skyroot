@@ -69,7 +69,14 @@
 		{
 			"id": "leafwind",
 			"name": "Leafwind",
-			"known": false
+			"scene": "res://scenes/leafwind.tscn",
+			"known": true,
+			"world": [
+				-170,
+				30,
+				-110
+			],
+			"cutscene": "res://data/cutscenes/glide_to_leafwind.json"
 		},
 		{
 			"id": "seedhaven",

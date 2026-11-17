@@ -1,0 +1,420 @@
+{
+	"name": "Glide to Leafwind",
+	"parts": [
+		{
+			"scene": "here",
+			"anchor": "launch",
+			"shots": [
+				{
+					"name": "1. Wide: run up the ramp",
+					"duration": 1.3,
+					"ease": "in",
+					"camera": {
+						"path": [
+							[
+								7.0,
+								3.0,
+								-1.0
+							],
+							[
+								6.5,
+								3.4,
+								1.5
+							]
+						],
+						"look": "player",
+						"look_height": 0.9,
+						"fov": 55
+					},
+					"player": {
+						"path": [
+							[
+								0,
+								0,
+								0
+							],
+							[
+								0,
+								0,
+								1.5
+							],
+							[
+								0,
+								0.3,
+								1.8
+							],
+							[
+								0,
+								0.68,
+								3.0
+							],
+							[
+								0,
+								0.68,
+								3.75
+							]
+						]
+					},
+					"events": [
+						{
+							"at": 0.0,
+							"do": "anim",
+							"name": "sprint"
+						}
+					]
+				},
+				{
+					"name": "2. Close: the glider opens as the player leaps",
+					"duration": 1.1,
+					"ease": "out",
+					"camera": {
+						"path": [
+							[
+								1.6,
+								2.0,
+								7.6
+							],
+							[
+								1.2,
+								2.3,
+								8.6
+							]
+						],
+						"look": "player",
+						"look_height": 1.0,
+						"fov": 50
+					},
+					"player": {
+						"path": [
+							[
+								0,
+								0.68,
+								3.75
+							],
+							[
+								0,
+								1.55,
+								5.0
+							],
+							[
+								0,
+								1.35,
+								6.5
+							]
+						],
+						"curve": true
+					},
+					"events": [
+						{
+							"at": 0.05,
+							"do": "glider_open"
+						},
+						{
+							"at": 0.05,
+							"do": "anim",
+							"name": "holding-both"
+						}
+					]
+				},
+				{
+					"name": "3. Pull back: gliding over the clouds",
+					"duration": 1.8,
+					"ease": "in_out",
+					"camera": {
+						"path": [
+							[
+								1.2,
+								2.3,
+								8.6
+							],
+							[
+								7.0,
+								5.0,
+								14.5
+							],
+							[
+								11.0,
+								9.0,
+								30.0
+							]
+						],
+						"look": "player",
+						"look_height": 1.2,
+						"fov": [
+							50,
+							60
+						]
+					},
+					"player": {
+						"path": [
+							[
+								0,
+								1.35,
+								6.5
+							],
+							[
+								0,
+								0.3,
+								11.5
+							],
+							[
+								0,
+								-1.5,
+								18.0
+							]
+						],
+						"curve": true,
+						"ease": "linear"
+					},
+					"events": [
+						{
+							"at": 0.0,
+							"do": "clouds",
+							"points": [
+								[
+									-5,
+									-6,
+									12
+								],
+								[
+									4,
+									-7,
+									17
+								],
+								[
+									-2,
+									-8,
+									24
+								],
+								[
+									6,
+									-5,
+									28
+								],
+								[
+									-7,
+									-6,
+									31
+								],
+								[
+									1,
+									-9,
+									34
+								]
+							]
+						},
+						{
+							"at": 1.4,
+							"do": "fade",
+							"to": 1.0,
+							"time": 0.4,
+							"color": "cloud"
+						}
+					]
+				}
+			]
+		},
+		{
+			"scene": "destination",
+			"anchor": "launch",
+			"shots": [
+				{
+					"name": "4. Long: the island drifts into view",
+					"duration": 2.0,
+					"ease": "linear",
+					"camera": {
+						"path": [
+							[
+								-5.0,
+								9.0,
+								48.0
+							],
+							[
+								-4.0,
+								7.5,
+								33.0
+							]
+						],
+						"look": [
+							0,
+							0.5,
+							-4
+						],
+						"fov": 55
+					},
+					"player": {
+						"path": [
+							[
+								0,
+								7.0,
+								34.0
+							],
+							[
+								0,
+								5.0,
+								20.0
+							],
+							[
+								0,
+								3.6,
+								11.0
+							]
+						],
+						"curve": true
+					},
+					"events": [
+						{
+							"at": 0.0,
+							"do": "anim",
+							"name": "holding-both"
+						},
+						{
+							"at": 0.0,
+							"do": "clouds",
+							"points": [
+								[
+									-6,
+									-3,
+									30
+								],
+								[
+									5,
+									-4,
+									22
+								],
+								[
+									-3,
+									-5,
+									40
+								],
+								[
+									7,
+									-2,
+									38
+								]
+							]
+						},
+						{
+							"at": 0.0,
+							"do": "fade",
+							"to": 0.0,
+							"time": 0.5
+						}
+					]
+				},
+				{
+					"name": "5. Low: a soft landing",
+					"duration": 1.6,
+					"ease": "out",
+					"camera": {
+						"path": [
+							[
+								0.9,
+								0.55,
+								-4.2
+							],
+							[
+								0.6,
+								0.5,
+								-4.7
+							]
+						],
+						"look": "player",
+						"look_height": 0.9,
+						"fov": 55
+					},
+					"player": {
+						"path": [
+							[
+								0,
+								3.6,
+								11.0
+							],
+							[
+								0,
+								2.2,
+								5.5
+							],
+							[
+								0,
+								1.6,
+								3.0
+							],
+							[
+								0,
+								0.9,
+								1.4
+							],
+							[
+								0,
+								0,
+								0
+							]
+						]
+					},
+					"events": [
+						{
+							"at": 1.25,
+							"do": "glider_close"
+						},
+						{
+							"at": 1.3,
+							"do": "anim",
+							"name": "idle"
+						}
+					]
+				},
+				{
+					"name": "6. Wide: the still village",
+					"duration": 2.6,
+					"ease": "in_out",
+					"camera": {
+						"path": [
+							[
+								9.0,
+								7.5,
+								3.0
+							],
+							[
+								2.0,
+								10.5,
+								5.0
+							],
+							[
+								-7.0,
+								9.0,
+								3.5
+							]
+						],
+						"look": [
+							[
+								4.0,
+								1.5,
+								-20.0
+							],
+							[
+								0.0,
+								1.5,
+								-24.0
+							],
+							[
+								-4.0,
+								1.5,
+								-20.0
+							]
+						],
+						"fov": 58
+					}
+				},
+				{
+					"name": "6b. Ease back to the game camera",
+					"duration": 0.7,
+					"ease": "in_out",
+					"camera": {
+						"game": true
+					}
+				}
+			]
+		}
+	]
+}

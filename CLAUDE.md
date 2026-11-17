@@ -23,9 +23,11 @@ The Godot console exe is:
 - Launch check (every island, plus talk spots: shared tiles, launch point on an edge facing sky, landing tile free and reachable, nothing cut off): `godot_console --headless --path . --script res://tools/check_islands.gd`
 - Small islands test (bench and seed "Press E" lines, trader's cycling talks, seed glows and stays put): `godot_console --headless --path . --script res://tools/test_small_islands.gd`
 - Travel test (launch prompt, menu, full glide cutscene, Esc / Space skip, landing, game state across trips): `godot_console --headless --path . --script res://tools/test_travel.gd`
-- Interior check (all 4 house interiors: tiles, flush stacking, overlaps, walls, colliders, floor, entrance→exit path, physics walk): `godot_console --headless --path . --script res://tools/check_interiors.gd` must print `RESULT: ALL PASSED`. Run it after any interior change.
+- Leafwind check (two levels: shared tiles, flush on its floor, no gaps or steps at bridges / stairs / deck edges, guarded drops, physics walks up every stairs and over every bridge, launch on an edge, landing free, every open tile reachable from the landing tile; plus its 3 interiors): `godot_console --headless --path . --script res://tools/check_leafwind.gd` must print `RESULT: ALL PASSED` (add `-- selftest` to prove it catches problems).
+- Leafwind talk test (all 8 villagers: prompt, E, turn to face you, cycling lines, player locked): `godot_console --headless --path . --script res://tools/test_leafwind_talk.gd`
+- Interior check (all 7 house interiors: tiles, flush stacking, overlaps, walls, colliders, floor, entrance→exit path, physics walk): `godot_console --headless --path . --script res://tools/check_interiors.gd` must print `RESULT: ALL PASSED`. Run it after any interior change.
 - Door test (every house: prompt, E, fade, interior, exit, back in front of the same door): `godot_console --headless --path . --script res://tools/test_doors.gd`
-- Villager check (island + 4 interiors: shared tiles, doors/exits blocked, flush, colliders, dialogue files): `godot_console --headless --path . --script res://tools/check_villagers.gd`
+- Villager check (Pebblenook, Trader's Rock, Leafwind + 5 interiors: shared tiles, doors/exits blocked, flush, colliders, dialogue files): `godot_console --headless --path . --script res://tools/check_villagers.gd`
 - Dialogue test (prompt, E opens/advances/closes, typing, player locked, facing, cycling): `godot_console --headless --path . --script res://tools/test_dialogue.gd`
 - Intro test (opening lore scene: starts once, all beats in order, seed glows, camera never clips, Esc / Space skip, no replay, control and colour back, elder recaps): `godot_console --headless --path . --script res://tools/test_intro.gd`
 - Window test (not headless; start maximized, F11 fullscreen, Esc untouched): `godot_console --path . --script res://tools/test_fullscreen.gd`
@@ -49,7 +51,7 @@ The Godot console exe is:
 
 ## Islands, travel and cutscenes
 
-- Islands are listed in `data/islands.json`. A new island extends `scripts/island.gd` (see `scripts/lookout_isle.gd`) and overrides `_map`, `_prop_layout`, `_villager_layout` and `_launch_layout`; `_add_talk_spot` adds a "Press E" line from a dialogue file.
+- Islands are listed in `data/islands.json`. An island may have two levels (see `scripts/leafwind.gd`): it overrides `cell_level`, `is_land`, `is_walkway` and `walk_links`; place everything with `cell_pos(cell)`. A new island extends `scripts/island.gd` (see `scripts/lookout_isle.gd`) and overrides `_map`, `_prop_layout`, `_villager_layout` and `_launch_layout`; `_add_talk_spot` adds a "Press E" line from a dialogue file.
 - Every island has a launch point on an edge tile, with its flag / signpost on a tile beside it along the edge; the tile in front of it is the landing tile, reserved so nothing can be placed there. The launch lip is the only thing allowed to stick out of its tile, and only over open sky (the fit checks enforce this).
 - Cutscenes are shot lists in `data/cutscenes/*.json`, played by the `Cutscene` autoload (format documented at the top of `scripts/cutscene.gd`). Positions are relative to an anchor the level provides (`cutscene_anchor(name)`).
 - Anything that must survive travel goes in `Game.state` (one game state for the whole game).

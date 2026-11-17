@@ -1,0 +1,22 @@
+{
+	"name": "Tuck",
+	"model": "res://Assets/Mini Characters/Models/GLB format/character-male-c.glb",
+	"scale": 0.72,
+	"conversations": [
+		[
+			"Wanna race? First one to the plaza wins. Winner gets to blow on the chimes.",
+			"...Nobody ever wins that one. They don't ring."
+		],
+		[
+			"I climbed nearly to the far cliff once. There's a big tangly thing on top, all white and twisty.",
+			"Mum says don't go near it. I wasn't scared. Much."
+		],
+		[
+			"Captain Brisk says the wind's just sulking. Can wind sulk?",
+			"If it can, I bet it's 'cause nobody said sorry."
+		],
+		[
+			"When I grow up I'm going to be a wind-maker. I'll make it in a big jar and let it out on special days."
+		]
+	]
+}

@@ -1,0 +1,22 @@
+{
+	"name": "Tamsin the Kite-maker",
+	"model": "res://Assets/Mini Characters/Models/GLB format/character-female-a.glb",
+	"scale": 0.9,
+	"conversations": [
+		[
+			"Oh! A visitor. Mind the paper, it's drying. Well. It's been drying for three weeks.",
+			"I keep making kites. Twelve this month. Not one of them has left the ground."
+		],
+		[
+			"A kite needs only two things: a good tail and a bit of sky that wants to play.",
+			"The sky doesn't want to play anymore. I don't blame it. Nobody does, lately."
+		],
+		[
+			"My gran said the first Leafwind kite was flown as a thank-you. To the Great Tree, I think.",
+			"Thank you for what, she never said. I wish I'd asked."
+		],
+		[
+			"If the wind ever comes back, the first kite is yours. The yellow one. It's the bravest."
+		]
+	]
+}

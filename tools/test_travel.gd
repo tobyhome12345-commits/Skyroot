@@ -1,7 +1,7 @@
 extends SceneTree
 ## Travel test, end to end:
 ##  - "Press E" at the launch point, E opens the destination menu with the
-##    right entries (other known islands selectable, the 4 unknown ones greyed
+##    right entries (other known islands selectable, the 3 unknown ones greyed
 ##    out as "Unknown", the current island not listed); Esc closes it
 ##  - picking Lookout Isle plays the whole glide cutscene: all shots in order,
 ##    about 8 s, the destination loaded in the background before the first
@@ -56,11 +56,12 @@ func _run() -> void:
 			"the island you're on is listed, greyed out, with a \"You are here\" tag")
 	_check(not _menu.choose("pebblenook"), "the island you're on can't be picked")
 	_check(_entry(entries, "lookout_isle").get("enabled", false), "Lookout Isle is selectable")
-	for unknown in ["rootholm", "barkton", "leafwind", "seedhaven"]:
+	_check(_entry(entries, "leafwind").get("enabled", false), "Leafwind is unlocked and selectable")
+	for unknown in ["rootholm", "barkton", "seedhaven"]:
 		var e := _entry(entries, unknown)
 		_check(not e.is_empty() and not e["enabled"], "%s is listed, greyed out and not selectable" % unknown.capitalize())
 	_check(not _menu.choose("rootholm"), "an unknown island can't be picked")
-	_check(_unknown_labels() == 4, "the 4 unknown islands say \"Unknown\"")
+	_check(_unknown_labels() == 3, "the 3 unknown islands say \"Unknown\"")
 	_check(entries.size() == 9, "all 9 islands are listed (%d)" % entries.size())
 	for id in ["lookout_isle", "traders_rock", "seed_isle"]:
 		_check(_entry(entries, id).get("enabled", false), "%s is selectable" % id)
@@ -165,6 +166,13 @@ func _run() -> void:
 	await _glide_skipped("lookout_isle")
 	# ---- A long chain between every island, to catch glitches that build up.
 	for dest in ["traders_rock", "seed_isle", "great_tree", "traders_rock", "lookout_isle", "seed_isle", "pebblenook"]:
+		await _glide_skipped(dest)
+	# ---- Leafwind: to and from every other island, and the arrival's wide shot.
+	_shots.clear()
+	await _glide_watched("leafwind")
+	_check(_shots.any(func(n: String) -> bool: return n.begins_with("6. Wide: the still village")),
+			"arriving on Leafwind ends with a wide shot of the still village (%s)" % ", ".join(_shots))
+	for dest in ["pebblenook", "leafwind", "great_tree", "leafwind", "lookout_isle", "leafwind", "traders_rock", "leafwind", "seed_isle", "leafwind"]:
 		await _glide_skipped(dest)
 	await _glide_watched("seed_isle")
 	await _glide_watched("traders_rock")

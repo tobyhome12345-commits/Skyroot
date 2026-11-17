@@ -1,0 +1,21 @@
+{
+	"name": "Maude the Rope-weaver",
+	"model": "res://Assets/Mini Characters/Models/GLB format/character-female-f.glb",
+	"conversations": [
+		[
+			"Rope's the one thing in Leafwind still doing its job. Holding things together. Someone has to."
+		],
+		[
+			"The bridges sag now, have you noticed? No wind to pull them taut. They look tired.",
+			"I know how they feel."
+		],
+		[
+			"My mother wove a rope so long they say it reached the Great Tree's lowest branch. For the old gifts, she said.",
+			"What gifts? Couldn't tell you. Some knots you tie so well you forget what they were holding."
+		],
+		[
+			"If you find the end of a tangle, you can undo the whole thing. That's the trick of it.",
+			"Wind's no different, I'd wager. Just bigger. And grumpier."
+		]
+	]
+}

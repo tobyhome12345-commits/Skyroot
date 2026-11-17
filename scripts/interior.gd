@@ -23,7 +23,7 @@ const PART_GAP := 0.08
 ## Rugs are scaled to fill this share of their footprint.
 const RUG_FILL := 0.9
 
-@export_enum("elder", "bedroom", "workshop", "library") var room := "elder"
+@export_enum("elder", "bedroom", "workshop", "library", "kite_workshop", "lookout", "family_home") var room := "elder"
 @export var player_path: NodePath
 
 ## Tiles taken by objects (cell -> object name).
@@ -57,7 +57,98 @@ func _ready() -> void:
 ##            places it next to the previous part instead (a chain)
 ##   flat     rugs: walkable, no collider, scaled to fill the footprint
 ##   light    adds a warm lamp light above the object
+##   deco     a Leafwind prop (scripts/leafwind_props.gd), e.g. "kite_rack",
+##            "wind_chime", "telescope", with its own "rot" / "color" / "flower"
 func _rooms() -> Dictionary:
+	var rooms := _pebblenook_rooms()
+	rooms.merge(_leafwind_rooms())
+	return rooms
+
+
+## Leafwind's three rooms.
+func _leafwind_rooms() -> Dictionary:
+	return {
+		# 5. The kite-maker's workshop: kites on racks, cloth, tools, rope.
+		"kite_workshop": {
+			"villager": {"id": "tamsin", "cell": Vector2i(4, 3), "facing": 0.0},
+			"wall": "wall-wood", "windows": [Vector2i(1, 0), Vector2i(4, 0), Vector2i(5, 3)],
+			"objects": [
+				{"row": [["S:workbench", 0.0, [["S:tool-hammer", 30.0]]], ["F:desk", 0.0, [["F:lampSquareTable", 0.0]]]],
+					"cell": Vector2i(0, 0), "size": Vector2i(2, 1), "against": ["north", "west"], "light": true},
+				{"type": "deco", "deco": "kite_rack", "cell": Vector2i(2, 0), "against": ["north"]},
+				{"type": "deco", "deco": "kite_rack", "cell": Vector2i(3, 0), "against": ["north"]},
+				{"row": [["F:bookcaseOpen", 0.0, [["F:books", 0.0]]], ["F:cardboardBoxOpen", 0.0, []]],
+					"cell": Vector2i(4, 0), "size": Vector2i(2, 1), "against": ["north", "east"]},
+				{"id": "S:chest", "cell": Vector2i(0, 1), "rot": 90.0, "against": ["west"]},
+				{"type": "deco", "deco": "kite_pole", "color": "blue", "rot": 180.0, "cell": Vector2i(5, 1), "against": ["east"]},
+				{"type": "deco", "deco": "rope_coils", "cell": Vector2i(0, 2), "against": ["west"]},
+				{"id": "F:table", "cell": Vector2i(2, 2), "size": Vector2i(2, 1),
+					"top": [["F:books", 20.0], ["S:box-open", 0.0]],
+					"parts": [["F:chair", 90.0, "west", []]]},
+				{"id": "F:lampSquareFloor", "cell": Vector2i(5, 2), "against": ["east"], "light": true},
+				{"id": "S:barrel", "cell": Vector2i(0, 3), "against": ["west"]},
+				{"id": "F:pottedPlant", "cell": Vector2i(5, 3), "against": ["east"]},
+				{"type": "deco", "deco": "planter", "flower": "flower_yellowA", "cell": Vector2i(0, 4), "against": ["west"]},
+				{"row": [["S:box-large", 0.0, []], ["S:box", 20.0, []]],
+					"axis": "z", "cell": Vector2i(5, 4), "size": Vector2i(1, 2), "against": ["east"]},
+				{"id": "F:coatRackStanding", "cell": Vector2i(0, 5)},
+				{"type": "deco", "deco": "wind_chime", "rot": 180.0, "cell": Vector2i(4, 5)},
+			],
+		},
+		# 6. The weather-watcher's lookout: a telescope at the window, books
+		# and a radio on the desk, a comfy chair for long waits.
+		"lookout": {
+			"wall": "wall", "windows": [Vector2i(0, 0), Vector2i(2, 0), Vector2i(4, 0), Vector2i(0, 3), Vector2i(5, 2)],
+			"objects": [
+				{"row": [["F:bookcaseOpen", 0.0, [["F:books", 0.0]]], ["F:bookcaseClosed", 0.0, []]],
+					"cell": Vector2i(0, 0), "size": Vector2i(2, 1), "against": ["north", "west"]},
+				{"id": "F:desk", "cell": Vector2i(2, 0), "size": Vector2i(2, 2), "against": ["north"],
+					"top": [["F:lampSquareTable", 0.0], ["F:radio", 0.0]], "light": true,
+					"parts": [["F:chairDesk", 180.0, "south", []]]},
+				{"type": "deco", "deco": "telescope", "rot": 0.0, "cell": Vector2i(4, 0), "against": ["north"]},
+				{"id": "F:pottedPlant", "cell": Vector2i(5, 0), "against": ["north", "east"]},
+				{"id": "F:loungeChairRelax", "cell": Vector2i(0, 3), "size": Vector2i(2, 1), "rot": 90.0, "against": ["west"]},
+				{"id": "F:sideTable", "cell": Vector2i(0, 2), "rot": 90.0, "against": ["west"],
+					"top": [["F:lampRoundTable", 0.0]], "light": true},
+				{"row": [["F:bookcaseOpenLow", -90.0, [["F:plantSmall2", 0.0]]], ["F:bookcaseOpenLow", -90.0, [["F:books", 0.0]]]],
+					"axis": "z", "cell": Vector2i(5, 1), "size": Vector2i(1, 2), "against": ["east"]},
+				{"id": "F:rugRound", "cell": Vector2i(2, 2), "size": Vector2i(2, 2), "flat": true},
+				{"id": "F:lampRoundFloor", "cell": Vector2i(5, 3), "against": ["east"], "light": true},
+				{"type": "deco", "deco": "wind_chime", "rot": 0.0, "cell": Vector2i(5, 4)},
+				{"id": "F:coatRackStanding", "cell": Vector2i(0, 5)},
+				{"id": "S:chest", "cell": Vector2i(5, 5), "rot": -90.0, "against": ["east"]},
+				{"id": "F:cardboardBoxClosed", "cell": Vector2i(4, 5)},
+			],
+		},
+		# 7. A family home: a little kitchen, a dining table with a pie, a
+		# bunk bed for the children, a sofa and a toy kite.
+		"family_home": {
+			"wall": "wall-wood", "windows": [Vector2i(1, 0), Vector2i(0, 3), Vector2i(5, 2)],
+			"objects": [
+				{"row": [["F:kitchenFridgeSmall", 0.0, []], ["F:kitchenCabinet", 0.0, [["K:loaf", 0.0]]], ["F:kitchenStove", 0.0, []]],
+					"cell": Vector2i(0, 0), "size": Vector2i(3, 1), "against": ["north", "west"]},
+				{"id": "F:bookcaseOpenLow", "cell": Vector2i(3, 0), "against": ["north"], "top": [["F:bear", 0.0]]},
+				{"id": "F:bedBunk", "cell": Vector2i(4, 0), "size": Vector2i(2, 2), "against": ["north", "east"]},
+				{"id": "F:table", "cell": Vector2i(0, 2), "size": Vector2i(2, 1),
+					"top": [["K:pie", 0.0], ["K:croissant", 40.0]],
+					"parts": [["F:chair", 90.0, "west", []], ["F:chair", -90.0, "east", []]]},
+				{"id": "F:sideTable", "cell": Vector2i(0, 3), "rot": 90.0, "against": ["west"],
+					"top": [["F:lampRoundTable", 0.0]], "light": true},
+				{"id": "F:rugRounded", "cell": Vector2i(2, 3), "size": Vector2i(2, 1), "flat": true},
+				{"id": "F:loungeSofa", "cell": Vector2i(4, 3), "size": Vector2i(2, 2), "rot": -90.0, "against": ["east"]},
+				{"type": "deco", "deco": "kite_pole", "color": "yellow", "rot": 90.0, "cell": Vector2i(5, 2), "against": ["east"]},
+				{"id": "F:coatRackStanding", "cell": Vector2i(0, 5)},
+				{"id": "F:cardboardBoxOpen", "cell": Vector2i(3, 5)},
+				{"id": "F:lampRoundFloor", "cell": Vector2i(4, 5), "light": true},
+				{"id": "F:pottedPlant", "cell": Vector2i(5, 5), "against": ["east"]},
+				{"type": "deco", "deco": "planter", "flower": "flower_redA", "cell": Vector2i(0, 4), "against": ["west"]},
+			],
+		},
+	}
+
+
+## Pebblenook's four rooms.
+func _pebblenook_rooms() -> Dictionary:
 	return {
 		# 1. The elder's home: cozy living room and kitchen.
 		"elder": {
@@ -338,6 +429,8 @@ func _build_objects(data: Dictionary) -> void:
 		var node: Node3D
 		if o.get("type", "") == "fireplace":
 			node = _build_fireplace()
+		elif o.get("type", "") == "deco":
+			node = _build_deco(o)
 		else:
 			node = _build_object(o)
 		node.name = obj_name
@@ -355,6 +448,8 @@ func _build_objects(data: Dictionary) -> void:
 
 
 func _label(o: Dictionary) -> String:
+	if o.has("deco"):
+		return o["deco"]
 	if o.has("type"):
 		return o["type"]
 	if o.has("row"):
@@ -485,6 +580,17 @@ func _fit_into_footprint(root: Node3D, size: Vector2i, against: Array) -> void:
 	box = ModelUtil.aabb_in(model, root)
 	if box.size.x > half.x * 2.0 or box.size.z > half.y * 2.0:
 		push_error("%s (%s) doesn't fit its %s tile footprint" % [root.name, box.size, size])
+
+
+## A Leafwind prop used as furniture. Its own collider is dropped: the room
+## makes one after fitting it into its footprint.
+func _build_deco(o: Dictionary) -> Node3D:
+	var p := o.duplicate()
+	p["type"] = o["deco"]
+	var node := LeafwindProps.build(p)
+	for cs in node.get_node("Body").get_children():
+		cs.free()
+	return node
 
 
 ## Fireplace (no pack has one): a stone chimney stack from the Fantasy Town

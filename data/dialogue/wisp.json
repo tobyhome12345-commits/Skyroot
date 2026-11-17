@@ -1,0 +1,19 @@
+{
+	"name": "Wisp",
+	"model": "res://Assets/Mini Characters/Models/GLB format/character-female-d.glb",
+	"scale": 0.72,
+	"conversations": [
+		[
+			"My kite is called Sir Flappington. He's very brave. He's just... resting.",
+			"He's been resting a long time."
+		],
+		[
+			"Tuck says if you run really, really fast, you make your own wind.",
+			"I tried. I made a stitch in my side. Sir Flappington didn't even wiggle."
+		],
+		[
+			"Grown-ups used to laugh at the Kite Festival. Now they just say \"maybe next year\".",
+			"What's the festival even for? Nobody remembers. I asked."
+		]
+	]
+}

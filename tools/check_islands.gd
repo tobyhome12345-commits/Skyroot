@@ -15,7 +15,7 @@ extends SceneTree
 ##   add "-- selftest" to put a crate on a landing tile and move a launch
 ##   point inland, to prove both are caught.
 
-const ISLANDS := ["res://scenes/pebblenook.tscn", "res://scenes/great_tree_island.tscn", "res://scenes/lookout_isle.tscn", "res://scenes/traders_rock.tscn", "res://scenes/seed_isle.tscn"]
+const ISLANDS := ["res://scenes/pebblenook.tscn", "res://scenes/great_tree_island.tscn", "res://scenes/lookout_isle.tscn", "res://scenes/traders_rock.tscn", "res://scenes/seed_isle.tscn", "res://scenes/leafwind.tscn"]
 const TOL := 0.02
 
 var _failures := 0

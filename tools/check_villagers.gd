@@ -14,12 +14,14 @@ extends SceneTree
 const SCENES := {
 	"island": "res://scenes/pebblenook.tscn",
 	"traders_rock": "res://scenes/traders_rock.tscn",
+	"leafwind": "res://scenes/leafwind.tscn",
 	"elder_home": "res://scenes/interiors/elder_home.tscn",
 	"bedroom": "res://scenes/interiors/bedroom.tscn",
 	"workshop": "res://scenes/interiors/workshop.tscn",
 	"library": "res://scenes/interiors/library.tscn",
+	"kite_workshop": "res://scenes/interiors/kite_workshop.tscn",
 }
-const EXPECTED := {"island": 2, "traders_rock": 1, "elder_home": 1, "bedroom": 1, "workshop": 1, "library": 1}
+const EXPECTED := {"island": 2, "traders_rock": 1, "leafwind": 7, "elder_home": 1, "bedroom": 1, "workshop": 1, "library": 1, "kite_workshop": 1}
 const TOL := 0.02
 
 var _failures := 0
@@ -49,7 +51,7 @@ func _run() -> void:
 		print("%-11s %s" % [key, "ok" if _failures == before else "%d problem(s)" % (_failures - before)])
 		scene.queue_free()
 		await process_frame
-	_expect(_total_villagers == 7, "7 villagers in total (%d)" % _total_villagers)
+	_expect(_total_villagers == 15, "15 villagers in total (%d)" % _total_villagers)
 	print("RESULT: %s (%d checks)" % ["ALL PASSED" if _failures == 0 else "%d FAILED" % _failures, _checks])
 	quit(1 if _failures > 0 else 0)
 
@@ -99,15 +101,16 @@ func _check_level(level: Node3D, is_island: bool) -> void:
 		_checks += 1
 		_expect(not door_cells.has(cell), "%s doesn't stand on a door / entrance / exit tile (%s)" % [label, cell])
 		if is_island:
-			_expect(level.is_ground(cell) and not level.is_path(cell), "%s stands on grass, not a path or the sky (%s)" % [label, cell])
+			_expect(level.is_ground(cell) and not level.is_walkway(cell), "%s stands on grass or a deck, not a path, stairs, bridge or the sky (%s)" % [label, cell])
 		else:
 			_expect(level.in_room(cell), "%s stands inside the room (%s)" % [label, cell])
 		blocked[cell] = true
-		_expect(Grid.world_to_cell(vil.global_position, map_size) == cell and is_zero_approx(vil.position.y),
+		var floor_y: float = level.cell_pos(cell).y if is_island else 0.0
+		_expect(Grid.world_to_cell(vil.global_position, map_size) == cell and is_equal_approx(vil.position.y, floor_y),
 				"%s is placed exactly on its tile at floor level" % label)
 		# Model: flush, inside its tile, not overlapping anything.
 		var box := ModelUtil.aabb_in(vil.get_node("Visual") as Node3D, level)
-		_expect(absf(box.position.y) <= TOL, "%s stands flush on the floor (feet y=%.3f)" % [label, box.position.y])
+		_expect(absf(box.position.y - floor_y) <= TOL, "%s stands flush on the floor (feet y=%.3f, floor y=%.1f)" % [label, box.position.y, floor_y])
 		var centre := Grid.cell_center(cell, map_size)
 		var tile := Rect2(Vector2(centre.x, centre.z) - Vector2.ONE * Grid.TILE / 2.0, Vector2.ONE * Grid.TILE)
 		var r := Rect2(Vector2(box.position.x, box.position.z), Vector2(box.size.x, box.size.z))

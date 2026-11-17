@@ -21,7 +21,7 @@ var _checks := 0
 var _island: Node3D
 
 
-const ISLANDS := ["res://scenes/pebblenook.tscn", "res://scenes/great_tree_island.tscn", "res://scenes/lookout_isle.tscn", "res://scenes/traders_rock.tscn", "res://scenes/seed_isle.tscn"]
+const ISLANDS := ["res://scenes/pebblenook.tscn", "res://scenes/great_tree_island.tscn", "res://scenes/lookout_isle.tscn", "res://scenes/traders_rock.tscn", "res://scenes/seed_isle.tscn", "res://scenes/leafwind.tscn"]
 
 
 func _initialize() -> void:
@@ -95,12 +95,18 @@ func _check_tiles(props: Array[Node3D]) -> void:
 			continue
 		for c in _footprint(prop):
 			_expect(_island.is_ground(c), "%s: tile %s is on the island" % [prop.name, c])
-			_expect(not _island.is_path(c), "%s: tile %s is not a path tile" % [prop.name, c])
+			_expect(not _island.is_walkway(c), "%s: tile %s is not a path, stairs or bridge tile" % [prop.name, c])
+			_expect(_island.cell_level(c) == _island.cell_level(prop.get_meta("cell")), "%s: tile %s is on the same level" % [prop.name, c])
 			if owner_of.has(c):
 				_fail("%s and %s share tile %s" % [prop.name, owner_of[c], c])
 			else:
 				owner_of[c] = prop.name
 		_checks += 1
+
+
+## Height of the floor a prop stands on (0, or one level up on Leafwind's decks).
+func _floor_y(prop: Node3D) -> float:
+	return _island.cell_pos(prop.get_meta("cell")).y
 
 
 func _footprint(prop: Node3D) -> Array[Vector2i]:
@@ -127,9 +133,10 @@ func _footprint_rect(prop: Node3D) -> Rect2:
 func _check_model(prop: Node3D) -> AABB:
 	var box := ModelUtil.aabb_in(prop.get_node("Model"), _island)
 	_expect(box.size.length() > 0.01, "%s has a visible model" % prop.name)
+	var floor_y := _floor_y(prop)
 	var bottom := box.position.y
-	_expect(absf(bottom) <= GROUND_TOLERANCE,
-			"%s sits flush on the ground (lowest point y=%.3f)" % [prop.name, bottom])
+	_expect(absf(bottom - floor_y) <= GROUND_TOLERANCE,
+			"%s sits flush on the floor (lowest point y=%.3f, floor y=%.1f)" % [prop.name, bottom, floor_y])
 	var rect := _footprint_rect(prop).grow(OVERHANG_TOLERANCE)
 	if prop.has_meta("overhang_dir"):
 		# The launch lip may hang out past its tile, but only towards the
@@ -164,7 +171,8 @@ func _check_collider(prop: Node3D, model_box: AABB) -> void:
 				"%s collider fits inside its model (collider %s, model %s)" % [prop.name, col, model_box])
 		var area_ratio := (col.size.x * col.size.z) / maxf(0.001, model_box.size.x * model_box.size.z)
 		_expect(area_ratio >= 0.5, "%s collider covers its model (%.0f%% of footprint)" % [prop.name, area_ratio * 100.0])
-		_expect(col.position.y <= GROUND_TOLERANCE and col.end.y >= minf(model_box.end.y, 1.0) - 0.05,
+		var floor_y := _floor_y(prop)
+		_expect(col.position.y - floor_y <= GROUND_TOLERANCE and col.end.y - floor_y >= minf(model_box.end.y - floor_y, 1.0) - 0.05,
 				"%s collider reaches from the ground to at least player height" % prop.name)
 
 
@@ -262,13 +270,14 @@ func _check_ground() -> void:
 	for s in _island.get_node("EdgeWalls").get_children():
 		var cs := s as CollisionShape3D
 		wall_cells[Grid.world_to_cell(cs.position, _island.map_size)] = true
-	var ground: Array = _island.ground_cells()
-	for c in ground:
-		_expect(floor_cells.has(c), "ground tile %s has floor under it" % c)
+	var ground: Array = _island.land_cells()
+	for c in _island.ground_cells():
 		for d in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
 			var n: Vector2i = c + d
 			if not _island.is_ground(n):
 				_expect(wall_cells.has(n), "edge next to %s is walled (at %s)" % [c, n])
+	for c in ground:
+		_expect(floor_cells.has(c), "ground tile %s has floor under it" % c)
 	_expect(floor_cells.size() == ground.size(), "one floor tile per ground tile (%d / %d)" % [floor_cells.size(), ground.size()])
 	# The ground mesh (grass + rocky underside) must cover every tile without gaps.
 	var mesh: Mesh = (_island.get_node("Ground") as MeshInstance3D).mesh
@@ -311,7 +320,7 @@ func _check_ground() -> void:
 	var edge_faces := 0
 	for c in ground:
 		for d in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
-			if not _island.is_ground(c + d):
+			if not _island.is_land(c + d):
 				edge_faces += 1
 	_expect(cliff_count == edge_faces, "every outer edge has a cliff wall (%d / %d)" % [cliff_count, edge_faces])
 	_check_coplanar(mesh)
@@ -352,8 +361,8 @@ func _check_coplanar(ground_mesh: Mesh) -> void:
 func _on_outer_edge(p: Vector3, axis: int) -> bool:
 	var step := Vector3.ZERO
 	step[axis] = 0.05
-	var inside: bool = _island.is_ground(Grid.world_to_cell(p - step, _island.map_size))
-	var outside: bool = _island.is_ground(Grid.world_to_cell(p + step, _island.map_size))
+	var inside: bool = _island.is_land(Grid.world_to_cell(p - step, _island.map_size))
+	var outside: bool = _island.is_land(Grid.world_to_cell(p + step, _island.map_size))
 	return inside != outside
 
 

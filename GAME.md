@@ -32,3 +32,9 @@
    - **Lookout Isle:** a bench and a low fence looking out at the withered Great Tree; E at the bench reads a wistful line.
    - **Trader's Rock:** Marigold the travelling trader at her red stall (cycling lines, no shop yet).
    - **Seed Isle:** a faintly glowing seed in soft earth, ringed by flowers; E reads a line hinting that something wants to grow there (it can't be collected yet).
+5. **Leafwind** (first main island, 28 x 28, `scripts/leafwind.gd`): a canopy village in a dead calm. Layout, look and people only (no puzzles, quests or wind mechanics yet).
+   - **Two levels:** the grass, and wooden / leaf decks one tile up, joined by two-tile wooden stairs; rope bridges cross the sky gaps between its pads.
+   - **Stillness:** 3 windmills that don't turn (their sails are a separate "Sails" pivot, ready to spin), limp kites, drooping banners, bunting and silent chimes; a far cliff on the north edge holds a tangled knot of wind (decoration only).
+   - **People:** Tamsin the Kite-maker (in her workshop), Nimbus the Weather-watcher, the children Wisp and Tuck, Maude the Rope-weaver, Bellamy the Chime-maker, Barnaby the Baker and Old Captain Brisk.
+   - **Interiors:** the kite-maker's workshop, the weather-watcher's lookout and a family home.
+   - **Travel:** unlocked in the menu everywhere; arriving ends with a wide shot of the still village (`data/cutscenes/glide_to_leafwind.json`).

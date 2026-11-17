@@ -50,6 +50,8 @@ const ROCK_COLOR := Color(0.6, 0.6, 0.76)
 
 ## Height of the invisible walls around the island edge.
 const EDGE_WALL_HEIGHT := 4.0
+## Islands may have two levels (Leafwind): level 1 floors are one tile up.
+const LEVEL_HEIGHT := Grid.TILE
 
 var map_size := Vector2i(16, 16)
 var map: Array[String] = []
@@ -176,7 +178,8 @@ func _add_talk_spot(stand: Vector2i, object: Vector2i, id: String, prompt_height
 	trigger.set_meta("cell", stand)
 	add_child(trigger)
 	var over := Grid.cell_center(object, map_size) - Grid.cell_center(stand, map_size)
-	trigger.setup(Grid.cell_center(stand, map_size), over + Vector3(0, prompt_height, 0), _read_line.bind(id))
+	over.y = cell_pos(object).y - cell_pos(stand).y
+	trigger.setup(cell_pos(stand), over + Vector3(0, prompt_height, 0), _read_line.bind(id))
 	talk_spots.append({"cell": stand, "object": object, "id": id})
 
 
@@ -247,7 +250,7 @@ func _place_villagers() -> void:
 		var cell: Vector2i = v["cell"]
 		if not _claim_footprint(cell, Vector2i.ONE, "villager_" + v["id"]):
 			continue
-		var villager := Villager.create(v["id"], Grid.cell_center(cell, map_size), v.get("facing", 0.0))
+		var villager := Villager.create(v["id"], cell_pos(cell), v.get("facing", 0.0))
 		if villager:
 			villager.set_meta("cell", cell)
 			root.add_child(villager)
@@ -268,7 +271,7 @@ func _spawn_player() -> void:
 	if not is_ground(cell) or occupied.has(cell):
 		push_error("Player start tile %s is not free ground" % cell)
 		return
-	player.spawn_at(Grid.cell_center(cell, map_size), facing)
+	player.spawn_at(cell_pos(cell), facing)
 
 
 ## The tile in front of a house's door (the door is in its front-left module).
@@ -292,7 +295,7 @@ func _build_doors() -> void:
 		door.set_meta("interior", p["interior"])
 		doors.add_child(door)
 		# Prompt floats above the door, which is on the tile edge behind.
-		door.setup(Grid.cell_center(front, map_size), Vector3(0.0, 2.6, -Grid.TILE / 2.0),
+		door.setup(cell_pos(front), Vector3(0.0, 2.6, -Grid.TILE / 2.0),
 				Game.enter_house.bind(p["interior"], front))
 
 
@@ -307,7 +310,7 @@ func _build_launch_trigger() -> void:
 	trigger.set_meta("cell", landing_cell)
 	add_child(trigger)
 	var to_ramp := Vector3(launch_dir.x, 0.0, launch_dir.y) * Grid.TILE
-	trigger.setup(Grid.cell_center(landing_cell, map_size), to_ramp + Vector3(0.0, 2.2, 0.0),
+	trigger.setup(cell_pos(landing_cell), to_ramp + Vector3(0.0, 2.2, 0.0),
 			TravelMenu.open.bind(island_id))
 
 
@@ -316,7 +319,7 @@ func _build_launch_trigger() -> void:
 func cutscene_anchor(anchor_name: String) -> Transform3D:
 	# "start": the start tile, no turn. "distant_tree": the far-off Great Tree.
 	if anchor_name == "start":
-		return global_transform * Transform3D(Basis(), Grid.cell_center(start_cell, map_size))
+		return global_transform * Transform3D(Basis(), cell_pos(start_cell))
 	if anchor_name == "distant_tree":
 		var far := get_node_or_null("DistantTree") as Node3D
 		if far:
@@ -324,7 +327,7 @@ func cutscene_anchor(anchor_name: String) -> Transform3D:
 	if anchor_name == "launch" and landing_cell.x >= 0:
 		var fwd := Vector3(launch_dir.x, 0.0, launch_dir.y)
 		var basis := Basis(fwd.cross(Vector3.UP) * -1.0, Vector3.UP, fwd)
-		return global_transform * Transform3D(basis, Grid.cell_center(landing_cell, map_size))
+		return global_transform * Transform3D(basis, cell_pos(landing_cell))
 	return global_transform
 
 
@@ -365,6 +368,33 @@ func is_ground(cell: Vector2i) -> bool:
 
 func is_path(cell: Vector2i) -> bool:
 	return is_ground(cell) and map[cell.y][cell.x] == "="
+
+
+## Solid island (grass, rock and cliffs under it). Bridges are walkable
+## ground but not land. Override on islands with bridges.
+func is_land(cell: Vector2i) -> bool:
+	return is_ground(cell)
+
+
+func land_cells() -> Array[Vector2i]:
+	return ground_cells().filter(func(c: Vector2i) -> bool: return is_land(c))
+
+
+## Which level a tile's floor is on (0 = the grass, 1 = one tile up).
+## Override on islands with raised platforms.
+func cell_level(_cell: Vector2i) -> int:
+	return 0
+
+
+## World position (island space) of the middle of a tile's floor.
+func cell_pos(cell: Vector2i) -> Vector3:
+	return Grid.cell_center(cell, map_size) + Vector3(0.0, float(cell_level(cell)) * LEVEL_HEIGHT, 0.0)
+
+
+## Tiles nothing may be placed on: paths, and on some islands stairs and
+## bridges. Override to add more.
+func is_walkway(cell: Vector2i) -> bool:
+	return is_path(cell)
 
 
 func ground_cells() -> Array[Vector2i]:
@@ -422,7 +452,7 @@ func _place_props() -> void:
 		if node == null:
 			continue
 		node.name = prop_name
-		node.position = Grid.footprint_center(cell, size, map_size)
+		node.position = Grid.footprint_center(cell, size, map_size) + Vector3(0.0, cell_pos(cell).y, 0.0)
 		node.set_meta("cell", cell)
 		node.set_meta("size", size)
 		if p["type"] == "launch":
@@ -441,8 +471,11 @@ func _claim_footprint(cell: Vector2i, size: Vector2i, prop_name: String) -> bool
 			if not is_ground(c):
 				push_error("%s at %s hangs off the island (tile %s)" % [prop_name, cell, c])
 				return false
-			if is_path(c):
+			if is_walkway(c):
 				push_error("%s at %s blocks the path (tile %s)" % [prop_name, cell, c])
+				return false
+			if cell_level(c) != cell_level(cell):
+				push_error("%s at %s spans two levels (tile %s)" % [prop_name, cell, c])
 				return false
 			if occupied.has(c):
 				push_error("%s at %s overlaps %s (tile %s)" % [prop_name, cell, occupied[c], c])
@@ -474,9 +507,9 @@ func _build_cliffs() -> void:
 		Vector2i(0, -1): 180.0,  # north: face -z
 		Vector2i(-1, 0): -90.0,  # west:  face -x
 	}
-	for cell in ground_cells():
+	for cell in land_cells():
 		for dir: Vector2i in sides:
-			if is_ground(cell + dir):
+			if is_land(cell + dir):
 				continue
 			var edge := Vector3(dir.x, 0.0, dir.y) * (Grid.TILE / 2.0)
 			var pos := Grid.cell_center(cell, map_size) + edge + Vector3(0.0, -GRASS_THICKNESS - CLIFF_HEIGHT, 0.0)
@@ -496,9 +529,9 @@ func _trim_corner_ends(wall: Node3D, cell: Vector2i, dir: Vector2i) -> void:
 	var along_cell := Vector2i(roundi(along.x), roundi(along.z))
 	var lo := -Grid.TILE / 2.0
 	var hi := Grid.TILE / 2.0
-	if not is_ground(cell + along_cell):
+	if not is_land(cell + along_cell):
 		hi -= CORNER_TRIM
-	if not is_ground(cell - along_cell):
+	if not is_land(cell - along_cell):
 		lo += CORNER_TRIM
 	wall.scale.x = (hi - lo) / Grid.TILE
 	wall.position += along * ((lo + hi) / 2.0)
@@ -510,7 +543,7 @@ func _build_path_tiles() -> void:
 	var tiles := Node3D.new()
 	tiles.name = "PathTiles"
 	add_child(tiles)
-	for cell in ground_cells():
+	for cell in land_cells():
 		if not is_path(cell):
 			continue
 		var rot := 90.0 * float(int(_cell_noise(cell, 4) * 4.0))
@@ -525,7 +558,7 @@ func _build_ground() -> void:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var half := Grid.TILE / 2.0
-	for cell in ground_cells():
+	for cell in land_cells():
 		var c := Grid.cell_center(cell, map_size)
 		# Grass slab, top surface at y = 0 (path tiles: recessed, tile on top).
 		var top_color := PATH_COLOR if is_path(cell) else GRASS_COLOR
@@ -544,13 +577,13 @@ func _build_ground() -> void:
 		# two surfaces never share a plane (that would flicker / z-fight).
 		var lo := Vector3(c.x - half, bottom, c.z - half)
 		var hi := Vector3(c.x + half, -GRASS_THICKNESS, c.z + half)
-		if not is_ground(cell + Vector2i(-1, 0)):
+		if not is_land(cell + Vector2i(-1, 0)):
 			lo.x += ROCK_INSET
-		if not is_ground(cell + Vector2i(1, 0)):
+		if not is_land(cell + Vector2i(1, 0)):
 			hi.x -= ROCK_INSET
-		if not is_ground(cell + Vector2i(0, -1)):
+		if not is_land(cell + Vector2i(0, -1)):
 			lo.z += ROCK_INSET
-		if not is_ground(cell + Vector2i(0, 1)):
+		if not is_land(cell + Vector2i(0, 1)):
 			hi.z -= ROCK_INSET
 		# No top face: the grass slab sits exactly on it, so it can't be seen
 		# and would only double up with the cliff tops at the same height.
@@ -571,7 +604,7 @@ func _build_ground() -> void:
 	var floor_body := StaticBody3D.new()
 	floor_body.name = "FloorBody"
 	add_child(floor_body)
-	for cell in ground_cells():
+	for cell in land_cells():
 		var shape := CollisionShape3D.new()
 		var box := BoxShape3D.new()
 		box.size = Vector3(Grid.TILE, GRASS_THICKNESS, Grid.TILE)

@@ -1,0 +1,22 @@
+{
+	"name": "Barnaby the Baker",
+	"model": "res://Assets/Mini Characters/Models/GLB format/character-male-f.glb",
+	"conversations": [
+		[
+			"Fresh bread! Well. Fresh-ish. With no breeze the oven smoke just sits there and the whole village smells like toast.",
+			"I've had complaints. Mostly from me."
+		],
+		[
+			"My windmill bread was famous. The flour came from the big mill, ground by the wind.",
+			"Now I grind it by hand. My arms are enormous. Have a look. ... No, really, have a look."
+		],
+		[
+			"People used to come for honey buns on Breath Day. Pastries shaped like little clouds.",
+			"Nobody's asked for one in years. I still bake a batch. Just in case."
+		],
+		[
+			"The bread's gone flat lately. Not the dough, the feeling. Everything's a bit flat.",
+			"Have a croissant. It won't fix anything, but it's buttery."
+		]
+	]
+}

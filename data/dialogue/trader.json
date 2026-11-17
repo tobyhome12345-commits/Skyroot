@@ -1,0 +1,22 @@
+{
+	"name": "Marigold the Trader",
+	"model": "res://Assets/Mini Characters/Models/GLB format/character-female-e.glb",
+	"conversations": [
+		[
+			"Welcome, welcome! Marigold's Marvellous Wares! Today's marvels: a bucket, a slightly bent spoon, and a jar of air from Leafwind.",
+			"Don't laugh. That's premium air. Very fresh. Well, it was."
+		],
+		[
+			"I've traded on every island in the sky. Barkton pays in arguments, Seedhaven pays in muffins.",
+			"Rootholm doesn't pay at all, but they give you a very firm handshake. Very firm. I still can't feel two fingers."
+		],
+		[
+			"My granny swore traders once carried gifts to the Great Tree, every spring. Not for coin. Just because.",
+			"Nobody does that any more. Mind you, nobody tells me anything. I just sell spoons."
+		],
+		[
+			"Shop's not open yet, love. I'm waiting on a delivery of hats. Or possibly cats. The letter was smudged.",
+			"Either way, come back later. It'll be exciting, or furry."
+		]
+	]
+}

@@ -13,12 +13,13 @@ extends SceneTree
 
 const SCENES := {
 	"island": "res://scenes/pebblenook.tscn",
+	"traders_rock": "res://scenes/traders_rock.tscn",
 	"elder_home": "res://scenes/interiors/elder_home.tscn",
 	"bedroom": "res://scenes/interiors/bedroom.tscn",
 	"workshop": "res://scenes/interiors/workshop.tscn",
 	"library": "res://scenes/interiors/library.tscn",
 }
-const EXPECTED := {"island": 2, "elder_home": 1, "bedroom": 1, "workshop": 1, "library": 1}
+const EXPECTED := {"island": 2, "traders_rock": 1, "elder_home": 1, "bedroom": 1, "workshop": 1, "library": 1}
 const TOL := 0.02
 
 var _failures := 0
@@ -39,15 +40,16 @@ func _run() -> void:
 		root.add_child(scene)
 		for i in 20:
 			await physics_frame
-		var level: Node3D = scene.get_node("Island") if key == "island" else scene as Node3D
+		var on_island := scene.has_node("Island")
+		var level: Node3D = scene.get_node("Island") if on_island else scene as Node3D
 		if selftest:
 			_break_things(level, key)
 		var before := _failures
-		_check_level(level, key == "island")
+		_check_level(level, on_island)
 		print("%-11s %s" % [key, "ok" if _failures == before else "%d problem(s)" % (_failures - before)])
 		scene.queue_free()
 		await process_frame
-	_expect(_total_villagers == 6, "6 villagers in total (%d)" % _total_villagers)
+	_expect(_total_villagers == 7, "7 villagers in total (%d)" % _total_villagers)
 	print("RESULT: %s (%d checks)" % ["ALL PASSED" if _failures == 0 else "%d FAILED" % _failures, _checks])
 	quit(1 if _failures > 0 else 0)
 
@@ -163,7 +165,11 @@ func _break_things(level: Node3D, key: String) -> void:
 	if villagers.is_empty():
 		return
 	var v := villagers[0] as Node3D
-	if key == "island":
+	if key == "traders_rock":
+		print("SELFTEST (traders_rock): move %s onto the landing tile" % v.name)
+		v.set_meta("cell", level.landing_cell)
+		v.position = Grid.cell_center(level.landing_cell, level.map_size)
+	elif key == "island":
 		print("SELFTEST (island): move %s onto the elder's door tile" % v.name)
 		var door := level.get_node("Doors").get_child(0)
 		v.set_meta("cell", door.get_meta("cell"))

@@ -1,6 +1,6 @@
 [gd_scene format=3]
 
-[ext_resource type="Script" path="res://scripts/test_island.gd" id="1_island"]
+[ext_resource type="Script" path="res://scripts/seed_isle.gd" id="1_island"]
 [ext_resource type="Script" path="res://scripts/follow_camera.gd" id="2_camera"]
 [ext_resource type="PackedScene" path="res://scenes/player.tscn" id="3_player"]
 [ext_resource type="Script" path="res://scripts/clouds.gd" id="4_clouds"]
@@ -39,7 +39,7 @@ adjustment_saturation = 1.1
 [sub_resource type="ShaderMaterial" id="Mat_tilt"]
 shader = ExtResource("5_tilt")
 
-[node name="TestIsland" type="Node3D"]
+[node name="SeedIsle" type="Node3D"]
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Env_morning")
@@ -55,13 +55,13 @@ directional_shadow_max_distance = 70.0
 
 [node name="Island" type="Node3D" parent="."]
 script = ExtResource("1_island")
-island_id = "test_island"
-start_cell = Vector2i(1, 5)
+island_id = "seed_isle"
+start_cell = Vector2i(6, 3)
 player_path = NodePath("../Player")
 
 [node name="Clouds" type="Node3D" parent="."]
 script = ExtResource("4_clouds")
-seed_value = 21
+seed_value = 17
 
 [node name="Player" parent="." instance=ExtResource("3_player")]
 

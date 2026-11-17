@@ -3,10 +3,10 @@ extends SceneTree
 ##  - "Press E" at the launch point, E opens the destination menu with the
 ##    right entries (other known islands selectable, the 4 unknown ones greyed
 ##    out as "Unknown", the current island not listed); Esc closes it
-##  - picking Test Island plays the whole glide cutscene: all shots in order,
+##  - picking Lookout Isle plays the whole glide cutscene: all shots in order,
 ##    about 8 s, the destination loaded in the background before the first
 ##    half ends, no input works meanwhile (moving, E, menus)
-##  - landing: on Test Island's landing tile, glider gone, normal camera back,
+##  - landing: on Lookout Isle's landing tile, glider gone, normal camera back,
 ##    full control again
 ##  - back to Pebblenook, skipping with Esc: fades and lands quickly
 ##  - a third trip skipped with Space during the second half
@@ -55,24 +55,28 @@ func _run() -> void:
 	_check(not here.is_empty() and not here["enabled"] and here["tag"] == "You are here",
 			"the island you're on is listed, greyed out, with a \"You are here\" tag")
 	_check(not _menu.choose("pebblenook"), "the island you're on can't be picked")
-	_check(_entry(entries, "test_island").get("enabled", false), "Test Island is selectable")
+	_check(_entry(entries, "lookout_isle").get("enabled", false), "Lookout Isle is selectable")
 	for unknown in ["rootholm", "barkton", "leafwind", "seedhaven"]:
 		var e := _entry(entries, unknown)
 		_check(not e.is_empty() and not e["enabled"], "%s is listed, greyed out and not selectable" % unknown.capitalize())
 	_check(not _menu.choose("rootholm"), "an unknown island can't be picked")
 	_check(_unknown_labels() == 4, "the 4 unknown islands say \"Unknown\"")
-	_check(entries.size() == 7, "all 7 islands are listed (%d)" % entries.size())
+	_check(entries.size() == 9, "all 9 islands are listed (%d)" % entries.size())
+	for id in ["lookout_isle", "traders_rock", "seed_isle"]:
+		_check(_entry(entries, id).get("enabled", false), "%s is selectable" % id)
+	_check(_entry(entries, "test_island").is_empty(), "the Test Island is gone from the menu")
 	_check(_entry(entries, "great_tree").get("enabled", false), "The Great Tree is selectable")
 	await _press(KEY_ESCAPE)
 	_check(not _menu.is_open() and not _game.input_locked, "Esc closes the menu and gives control back")
 
-	# ---- Trip 1: Pebblenook -> Test Island, watched in full.
+	# ---- Trip 1: Pebblenook -> Lookout Isle, watched in full.
 	await _press(KEY_E)
 	_check(_menu.is_open(), "E opens the menu again")
 	_shots.clear()
 	var start_ms := Time.get_ticks_msec()
-	await _press(KEY_E)  # focus starts on Test Island
-	_check(_cs.running, "picking Test Island starts the glide cutscene")
+	await _press(KEY_S)  # focus starts on The Great Tree; S moves down to Lookout Isle
+	await _press(KEY_E)
+	_check(_cs.running, "picking Lookout Isle starts the glide cutscene")
 	_check(not _menu.is_open(), "the menu closes when the cutscene starts")
 	# Nothing works during the cutscene.
 	await _frames(20)
@@ -94,10 +98,10 @@ func _run() -> void:
 	_check(seconds > 7.0 and seconds < 10.0, "the cutscene takes about 8 seconds (%.1f s)" % seconds)
 	_check(_cs.destination_ready_in_time, "the destination loaded in the background before the first half ended")
 	_check(not _cs.skipped, "it wasn't skipped")
-	await _check_landed("test_island", "trip 1")
+	await _check_landed("lookout_isle", "trip 1")
 	_check(_game.state["trips"] == 1, "one trip taken")
 
-	# ---- Trip 2: Test Island -> Pebblenook, skipped with Esc.
+	# ---- Trip 2: Lookout Isle -> Pebblenook, skipped with Esc.
 	island = current_scene.get_node("Island")
 	player = current_scene.get_node("Player") as CharacterBody3D
 	player.spawn_at(Grid.cell_center(island.landing_cell, island.map_size))
@@ -105,9 +109,9 @@ func _run() -> void:
 	await _press(KEY_E)
 	entries = _menu.entries()
 	ids = entries.map(func(e: Dictionary) -> String: return e["id"])
-	_check(_entry(entries, "pebblenook").get("enabled", false) and _entry(entries, "test_island").get("tag", "") == "You are here"
-			and not _entry(entries, "test_island").get("enabled", true),
-			"on Test Island the menu offers Pebblenook, and Test Island says \"You are here\"")
+	_check(_entry(entries, "pebblenook").get("enabled", false) and _entry(entries, "lookout_isle").get("tag", "") == "You are here"
+			and not _entry(entries, "lookout_isle").get("enabled", true),
+			"on Lookout Isle the menu offers Pebblenook, and Lookout Isle says \"You are here\"")
 	_check(_menu.choose("pebblenook"), "Pebblenook can be picked")
 	await _frames(40)
 	var skip_ms := Time.get_ticks_msec()
@@ -122,7 +126,7 @@ func _run() -> void:
 	await _talk("juniper", Vector2i(0, 1))
 	_check(_box_text_was == current_scene.get_node("Island/Villagers/villager_juniper").conversations[1][0],
 			"Juniper continues with her 2nd conversation after two trips (nothing reset)")
-	_check("test_island" in _game.state["visited"] and "pebblenook" in _game.state["visited"],
+	_check("lookout_isle" in _game.state["visited"] and "pebblenook" in _game.state["visited"],
 			"both islands are in the visited list")
 
 	# ---- Trip 3: skipped with Space during the second half.
@@ -131,26 +135,26 @@ func _run() -> void:
 	player.spawn_at(Grid.cell_center(island.landing_cell, island.map_size))
 	await _physics(10)
 	await _press(KEY_E)
-	_menu.choose("test_island")
+	_menu.choose("lookout_isle")
 	while _cs.running and _cs.shot_index < 3:
 		await process_frame
 	await _frames(10)
-	_check(current_scene.scene_file_path.ends_with("test_island.tscn"), "the second half plays on the destination island")
+	_check(current_scene.scene_file_path.ends_with("lookout_isle.tscn"), "the second half plays on the destination island")
 	await _press(KEY_SPACE)
 	await _wait_cutscene()
 	_check(_cs.skipped, "Space skips the cutscene")
-	await _check_landed("test_island", "trip 3 (skipped in the second half)")
+	await _check_landed("lookout_isle", "trip 3 (skipped in the second half)")
 	_check(_game.state["trips"] == 3 and _game.state["conversations"].get("juniper", 0) == 2,
 			"game state kept counting across 3 trips (trips 3, Juniper 2)")
 
-	# ---- Trip 4: Test Island -> the Great Tree, watched in full (tilt-up arrival).
+	# ---- Trip 4: Lookout Isle -> the Great Tree, watched in full (tilt-up arrival).
 	island = current_scene.get_node("Island")
 	player = current_scene.get_node("Player") as CharacterBody3D
 	player.spawn_at(Grid.cell_center(island.landing_cell, island.map_size))
 	await _physics(10)
 	await _press(KEY_E)
 	_shots.clear()
-	_check(_menu.choose("great_tree"), "Test Island's menu offers the Great Tree")
+	_check(_menu.choose("great_tree"), "Lookout Isle's menu offers the Great Tree")
 	await _wait_cutscene()
 	_check(_shots.any(func(n: String) -> bool: return n.begins_with("6. Tilt up")),
 			"arriving at the Great Tree plays the tilt-up reveal (%s)" % ", ".join(_shots))
@@ -158,10 +162,31 @@ func _run() -> void:
 	# ---- Glide back from the tree to both islands (skipped with Esc).
 	await _glide_skipped("pebblenook")
 	await _glide_skipped("great_tree")
-	await _glide_skipped("test_island")
+	await _glide_skipped("lookout_isle")
+	# ---- A long chain between every island, to catch glitches that build up.
+	for dest in ["traders_rock", "seed_isle", "great_tree", "traders_rock", "lookout_isle", "seed_isle", "pebblenook"]:
+		await _glide_skipped(dest)
+	await _glide_watched("seed_isle")
+	await _glide_watched("traders_rock")
+	_check(root.find_children("Glider", "", true, false).is_empty(), "no glider is left anywhere after many trips")
+	_check(root.find_children("CutsceneCamera", "", true, false).is_empty(), "no cutscene camera is left over")
+	_check(absf(_game.colour_level - 1.0) < 0.001, "the world's colour is untouched by travel")
 
 	print("RESULT: %s" % ("ALL PASSED" if _failures == 0 else "%d FAILED" % _failures))
 	quit(1 if _failures > 0 else 0)
+
+
+func _glide_watched(dest: String) -> void:
+	var island := current_scene.get_node("Island")
+	var player := current_scene.get_node("Player") as CharacterBody3D
+	var from: String = island.island_id
+	player.spawn_at(Grid.cell_center(island.landing_cell, island.map_size))
+	await _physics(10)
+	await _press(KEY_E)
+	_check(_menu.choose(dest), "from %s the menu offers %s" % [from, dest])
+	await _wait_cutscene()
+	_check(not _cs.skipped, "%s to %s played in full" % [from, dest])
+	await _check_landed(dest, "%s to %s (watched)" % [from, dest])
 
 
 func _glide_skipped(dest: String) -> void:

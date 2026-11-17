@@ -18,9 +18,10 @@ The Godot console exe is:
   Once a main scene exists, also run it briefly: `godot_console --headless --path . --quit-after 60`
   Read the output; fix any `SCRIPT ERROR` / `ERROR` / `Parse Error` lines before moving on.
 - Gameplay test (movement, blocking, F3 debug): `godot_console --headless --path . --script res://tools/test_movement.gd` — must print `RESULT: ALL PASSED`.
-- Fit check (both islands: tiles, flush on ground, overlaps, colliders, gaps): `godot_console --headless --path . --script res://tools/check_fit.gd` must print `RESULT: ALL PASSED`. Run it after any change to props or models.
+- Fit check (every island: tiles, flush on ground, overlaps, colliders, gaps): `godot_console --headless --path . --script res://tools/check_fit.gd` must print `RESULT: ALL PASSED`. Run it after any change to props or models.
 - Tree check (Great Tree: vines and hanging pieces attached, knots / hollows in the bark, branches and leaves attached, roots resting on the ground and not clipping, fallen leaves on open grass): `godot_console --headless --path . --script res://tools/check_tree.gd`
-- Launch check (both islands: shared tiles, launch point on an edge facing sky, landing tile free and reachable, nothing cut off): `godot_console --headless --path . --script res://tools/check_islands.gd`
+- Launch check (every island, plus talk spots: shared tiles, launch point on an edge facing sky, landing tile free and reachable, nothing cut off): `godot_console --headless --path . --script res://tools/check_islands.gd`
+- Small islands test (bench and seed "Press E" lines, trader's cycling talks, seed glows and stays put): `godot_console --headless --path . --script res://tools/test_small_islands.gd`
 - Travel test (launch prompt, menu, full glide cutscene, Esc / Space skip, landing, game state across trips): `godot_console --headless --path . --script res://tools/test_travel.gd`
 - Interior check (all 4 house interiors: tiles, flush stacking, overlaps, walls, colliders, floor, entrance→exit path, physics walk): `godot_console --headless --path . --script res://tools/check_interiors.gd` must print `RESULT: ALL PASSED`. Run it after any interior change.
 - Door test (every house: prompt, E, fade, interior, exit, back in front of the same door): `godot_console --headless --path . --script res://tools/test_doors.gd`
@@ -48,7 +49,7 @@ The Godot console exe is:
 
 ## Islands, travel and cutscenes
 
-- Islands are listed in `data/islands.json`. A new island extends `scripts/island.gd` (see `scripts/test_island.gd`) and overrides `_map`, `_prop_layout`, `_villager_layout` and `_launch_layout`.
+- Islands are listed in `data/islands.json`. A new island extends `scripts/island.gd` (see `scripts/lookout_isle.gd`) and overrides `_map`, `_prop_layout`, `_villager_layout` and `_launch_layout`; `_add_talk_spot` adds a "Press E" line from a dialogue file.
 - Every island has a launch point on an edge tile, with its flag / signpost on a tile beside it along the edge; the tile in front of it is the landing tile, reserved so nothing can be placed there. The launch lip is the only thing allowed to stick out of its tile, and only over open sky (the fit checks enforce this).
 - Cutscenes are shot lists in `data/cutscenes/*.json`, played by the `Cutscene` autoload (format documented at the top of `scripts/cutscene.gd`). Positions are relative to an anchor the level provides (`cutscene_anchor(name)`).
 - Anything that must survive travel goes in `Game.state` (one game state for the whole game).

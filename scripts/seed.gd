@@ -53,6 +53,11 @@ func set_glow(to: float, time := 0.8) -> void:
 	tween.tween_method(_apply_glow, glow, to, maxf(time, 0.01))
 
 
+## Sets the glow straight away (no fade).
+func glow_now(v: float) -> void:
+	_apply_glow(v)
+
+
 func _apply_glow(v: float) -> void:
 	glow = v
 	_mat.emission_energy_multiplier = 0.9 * v

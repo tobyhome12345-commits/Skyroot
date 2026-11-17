@@ -52,7 +52,11 @@ static func build(p: Dictionary) -> Node3D:
 		"cart":
 			return simple(T + "cart.glb", 0.85, 0.0, p.get("rot", 0.0))
 		"stall":
-			return simple(T + "stall-green.glb", 0.9, 0.0, p.get("rot", 0.0))
+			return simple(T + ("stall-red.glb" if p.get("red", false) else "stall-green.glb"), 0.9, 0.0, p.get("rot", 0.0))
+		"bench":
+			return simple(T + "stall-bench.glb", 0.85, 0.0, p.get("rot", 90.0))
+		"seed_spot":
+			return seed_spot()
 		"launch":
 			return launch_point(p["dir"])
 		"launch_flag":
@@ -229,6 +233,40 @@ static func _promise_carving() -> Node3D:
 	title.position = Vector3(0.0, 1.55, front + 0.003)
 	carving.add_child(title)
 	return carving
+
+
+## A faintly glowing seed resting in a little mound of soft, dark earth.
+## The mound is a low dome standing on the grass; the seed nestles into its
+## top. The seed can't be picked up (yet).
+static func seed_spot() -> Node3D:
+	var root := _root()
+	var model := root.get_node("Model") as Node3D
+	var mound := MeshInstance3D.new()
+	mound.name = "SoftEarth"
+	var dome := SphereMesh.new()
+	dome.radius = SEED_MOUND_RADIUS
+	dome.height = SEED_MOUND_HEIGHT
+	dome.is_hemisphere = true
+	dome.radial_segments = 20
+	dome.rings = 6
+	mound.mesh = dome
+	mound.material_override = MeshUtil.color_material(Color(0.36, 0.25, 0.18), 1.0)
+	model.add_child(mound)
+	# Stand the dome on the grass, wherever its mesh starts.
+	var box := dome.get_aabb()
+	mound.position.y = -box.position.y
+	var top := box.end.y - box.position.y
+	var seed := Seed.new()
+	# Seed body: 0.2 tall, centred on its origin; it sinks 3 cm into the earth.
+	seed.position = Vector3(0.0, top + 0.1 - 0.03, 0.0)
+	model.add_child(seed)
+	seed.glow_now(0.55)
+	_collider_from_model(root)
+	return root
+
+
+const SEED_MOUND_RADIUS := 0.62
+const SEED_MOUND_HEIGHT := 0.22
 
 
 ## A piece that runs along one edge of its tile (fence, hedge).

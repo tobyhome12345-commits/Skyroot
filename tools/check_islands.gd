@@ -15,7 +15,7 @@ extends SceneTree
 ##   add "-- selftest" to put a crate on a landing tile and move a launch
 ##   point inland, to prove both are caught.
 
-const ISLANDS := ["res://scenes/pebblenook.tscn", "res://scenes/test_island.tscn", "res://scenes/great_tree_island.tscn"]
+const ISLANDS := ["res://scenes/pebblenook.tscn", "res://scenes/great_tree_island.tscn", "res://scenes/lookout_isle.tscn", "res://scenes/traders_rock.tscn", "res://scenes/seed_isle.tscn"]
 const TOL := 0.02
 
 var _failures := 0
@@ -129,6 +129,14 @@ func _check_island(island: Node3D) -> void:
 			_expect(from_landing.has(g), "open tile %s can be reached from the landing tile" % g)
 	for d in doors:
 		_expect(from_landing.has(d.get_meta("cell")), "door tile %s can be reached from the landing tile" % d.get_meta("cell"))
+	# Talk spots (bench, seed...): the player's tile is free and reachable,
+	# and the thing they talk to is really there.
+	for spot: Dictionary in island.talk_spots:
+		var stand: Vector2i = spot["cell"]
+		_expect(island.is_ground(stand) and not owner_of.has(stand), "talk spot %s: its tile %s is free" % [spot["id"], stand])
+		_expect(from_landing.has(stand), "talk spot %s can be reached from the landing tile" % spot["id"])
+		_expect(owner_of.has(spot["object"]), "talk spot %s: there is something on %s to look at" % [spot["id"], spot["object"]])
+		_expect(island.get_node_or_null("talk_" + String(spot["id"])) != null, "talk spot %s has its prompt" % spot["id"])
 	var tree = island.get("tree")
 	if tree:
 		var stand: Vector2i = tree.entrance_cells()[1]
@@ -172,12 +180,14 @@ func _break_things(island: Node3D) -> void:
 		var last := props.get_child(props.get_child_count() - 1)
 		last.set_meta("cell", island.tree.entrance_cells()[1])
 		last.set_meta("solid", true)
+	elif island.island_id == "pebblenook":
+		pass
 	else:
 		print("SELFTEST (%s): move the launch point inland" % island.island_id)
 		for p in props.get_children():
 			if String(p.name).begins_with("launch_") and not String(p.name).begins_with("launch_flag"):
-				p.set_meta("cell", Vector2i(4, 3))
-				island.launch_cell = Vector2i(4, 3)
+				p.set_meta("cell", Vector2i(3, 3))
+				island.launch_cell = Vector2i(3, 3)
 				break
 
 

@@ -1,5 +1,5 @@
 extends SceneTree
-## Automated fit check for every island (Pebblenook and Test Island).
+## Automated fit check for every island.
 ## Fails (exit code 1) if:
 ##  - two objects share a tile, or an object is off the island / on a path
 ##  - any model floats above or sinks below the ground (lowest point != y 0)
@@ -21,7 +21,7 @@ var _checks := 0
 var _island: Node3D
 
 
-const ISLANDS := ["res://scenes/pebblenook.tscn", "res://scenes/test_island.tscn", "res://scenes/great_tree_island.tscn"]
+const ISLANDS := ["res://scenes/pebblenook.tscn", "res://scenes/great_tree_island.tscn", "res://scenes/lookout_isle.tscn", "res://scenes/traders_rock.tscn", "res://scenes/seed_isle.tscn"]
 
 
 func _initialize() -> void:

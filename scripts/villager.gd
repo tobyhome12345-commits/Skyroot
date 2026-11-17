@@ -58,6 +58,15 @@ static func create(id: String, tile_centre: Vector3, facing_degrees := 0.0) -> V
 	return v
 
 
+## Reads data/dialogue/<id>.json for a talk spot: {"name", "conversations"}.
+static func load_dialogue_lines(id: String) -> Dictionary:
+	var data = JSON.parse_string(FileAccess.get_file_as_string(DIALOGUE_DIR + id + ".json"))
+	if not (data is Dictionary) or not data.has("name") or not data.has("conversations"):
+		push_error("Dialogue file for %s needs name and conversations" % id)
+		return {}
+	return data
+
+
 ## Reads data/dialogue/<id>.json: {"name", "model", "conversations": [[page, ...], ...]}.
 static func load_dialogue(id: String) -> Dictionary:
 	var path := DIALOGUE_DIR + id + ".json"

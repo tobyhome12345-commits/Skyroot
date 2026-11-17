@@ -59,6 +59,9 @@ var occupied := {}
 var reserved := {}
 ## The launch point: its edge tile, the way it points (towards the sky) and
 ## the free landing tile in front of it. Empty cell = no launch point.
+## Places where "Press E" shows a line (a bench, a seed...):
+## [{"cell": tile the player stands on, "object": tile of the thing, "id": dialogue file}].
+var talk_spots: Array[Dictionary] = []
 var launch_cell := Vector2i(-1, -1)
 var launch_dir := Vector2i.ZERO
 var landing_cell := Vector2i(-1, -1)
@@ -161,6 +164,29 @@ func _ready() -> void:
 	_after_build()
 	_add_distant_views()
 	_spawn_player()
+
+
+## A spot where pressing E reads a line from data/dialogue/<id>.json
+## ({"name", "conversations"}), cycling through them. The player stands on
+## `stand`; the prompt floats over the thing on `object`.
+func _add_talk_spot(stand: Vector2i, object: Vector2i, id: String, prompt_height := 2.0) -> void:
+	var trigger := Area3D.new()
+	trigger.set_script(preload("res://scripts/door_trigger.gd"))
+	trigger.name = "talk_" + id
+	trigger.set_meta("cell", stand)
+	add_child(trigger)
+	var over := Grid.cell_center(object, map_size) - Grid.cell_center(stand, map_size)
+	trigger.setup(Grid.cell_center(stand, map_size), over + Vector3(0, prompt_height, 0), _read_line.bind(id))
+	talk_spots.append({"cell": stand, "object": object, "id": id})
+
+
+func _read_line(id: String) -> void:
+	var data := Villager.load_dialogue_lines(id)
+	if data.is_empty():
+		return
+	var convs: Array = data["conversations"]
+	var i: int = Game.next_conversation("spot_" + id, convs.size())
+	DialogueBox.open(data["name"], convs[i])
 
 
 ## Hooks for islands that build something big before / after the props.

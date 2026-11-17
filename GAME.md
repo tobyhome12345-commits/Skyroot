@@ -24,7 +24,11 @@
    - **Interiors:** each of the 4 houses has its own room (elder's home, bedroom, workshop, library), entered with E.
    - **Villagers:** Elder Moss, Pip, Wren the Tinkerer and Scholar Quill indoors; Fennel the Gardener and Juniper the Traveller outside. Their lines live in `data/dialogue/*.json`: warm, a little funny, with hints of the fading Great Tree, the forgotten Promise of Root and Sky, festivals nobody remembers the reason for, and gossip about the other islands.
    - **Launch point:** a roped wooden ramp on Pebblenook's east edge, ending in a plank lip that overhangs the edge, with a flag and signpost beside it. "Press E" opens the destination menu (islands in `data/islands.json`; unknown ones are greyed out, the current one is tagged "You are here").
-2. **Test Island** (`scenes/test_island.tscn`): a small 10 x 10 island to try travel, with its own launch point.
+2. **Travel** between islands with the glide cutscene (the old Test Island has been removed).
    - **Glide cutscene:** about 8 s in two halves: run up the ramp, the glider opens, glide over the clouds; then the island drifts into view and the player lands on the landing tile. The shot list is in `data/cutscenes/glide.json`, played by the reusable `Cutscene` system (later: returning gifts to the Great Tree). Esc / Space skip.
    - **One game state** (`Game.state`): current island, visited islands, villager conversation progress and trip count carry across every trip.
 3. **Opening lore scene** (`data/cutscenes/intro.json`, lines in `data/dialogue/elder_intro.json`): plays once, the first time a new game starts on Pebblenook. Elder Moss meets the traveller, the seed glows, and he tells of the Great Tree, the Old Promise, the Forgetting and the Fading, then points to the launch point. Esc / Space skip it. Afterwards Elder Moss gives short recaps.
+4. **Small islands** (8 x 8 each, all reachable by gliding):
+   - **Lookout Isle:** a bench and a low fence looking out at the withered Great Tree; E at the bench reads a wistful line.
+   - **Trader's Rock:** Marigold the travelling trader at her red stall (cycling lines, no shop yet).
+   - **Seed Isle:** a faintly glowing seed in soft earth, ringed by flowers; E reads a line hinting that something wants to grow there (it can't be collected yet).

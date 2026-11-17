@@ -1,12 +1,80 @@
 {
 	"islands": [
-		{"id": "pebblenook", "name": "Pebblenook", "scene": "res://scenes/pebblenook.tscn", "known": true, "world": [0, 0, 0]},
-		{"id": "test_island", "name": "Test Island", "scene": "res://scenes/test_island.tscn", "known": true, "world": [150, 20, 40]},
-		{"id": "great_tree", "name": "The Great Tree", "scene": "res://scenes/great_tree_island.tscn", "known": true, "world": [40, -185, -395],
-			"cutscene": "res://data/cutscenes/glide_to_great_tree.json"},
-		{"id": "rootholm", "name": "Rootholm", "known": false},
-		{"id": "barkton", "name": "Barkton", "known": false},
-		{"id": "leafwind", "name": "Leafwind", "known": false},
-		{"id": "seedhaven", "name": "Seedhaven", "known": false}
+		{
+			"id": "pebblenook",
+			"name": "Pebblenook",
+			"scene": "res://scenes/pebblenook.tscn",
+			"known": true,
+			"world": [
+				0,
+				0,
+				0
+			]
+		},
+		{
+			"id": "great_tree",
+			"name": "The Great Tree",
+			"scene": "res://scenes/great_tree_island.tscn",
+			"known": true,
+			"world": [
+				40,
+				-185,
+				-395
+			],
+			"cutscene": "res://data/cutscenes/glide_to_great_tree.json"
+		},
+		{
+			"id": "lookout_isle",
+			"name": "Lookout Isle",
+			"scene": "res://scenes/lookout_isle.tscn",
+			"known": true,
+			"world": [
+				40,
+				15,
+				-150
+			]
+		},
+		{
+			"id": "traders_rock",
+			"name": "Trader's Rock",
+			"scene": "res://scenes/traders_rock.tscn",
+			"known": true,
+			"world": [
+				-150,
+				-10,
+				40
+			]
+		},
+		{
+			"id": "seed_isle",
+			"name": "Seed Isle",
+			"scene": "res://scenes/seed_isle.tscn",
+			"known": true,
+			"world": [
+				160,
+				25,
+				-70
+			]
+		},
+		{
+			"id": "rootholm",
+			"name": "Rootholm",
+			"known": false
+		},
+		{
+			"id": "barkton",
+			"name": "Barkton",
+			"known": false
+		},
+		{
+			"id": "leafwind",
+			"name": "Leafwind",
+			"known": false
+		},
+		{
+			"id": "seedhaven",
+			"name": "Seedhaven",
+			"known": false
+		}
 	]
 }

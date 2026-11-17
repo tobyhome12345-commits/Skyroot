@@ -9,7 +9,7 @@ extends SceneTree
 ##    dialogue file, the player can't move, E closes it, nothing opens
 ##  - one shared health value: changing it recolours bark and leaves, shows
 ##    more leaves and fewer falling ones, on the full tree and the distant one
-##  - the distant tree is on Pebblenook and Test Island, low-detail, far away
+##  - the distant tree is on every other island, low-detail, far away
 ## Usage: godot_console --headless --path . --script res://tools/test_great_tree.gd
 
 var _failures := 0
@@ -107,7 +107,7 @@ func _run() -> void:
 	_check(TreeLook.bark().albedo_color == bark0 and _shown(tree) == shown0, "setting health back to 0 restores the withered look")
 
 	# Distant tree on the other islands, cheap.
-	for path: String in ["res://scenes/pebblenook.tscn", "res://scenes/test_island.tscn"]:
+	for path: String in ["res://scenes/pebblenook.tscn", "res://scenes/lookout_isle.tscn", "res://scenes/traders_rock.tscn", "res://scenes/seed_isle.tscn"]:
 		change_scene_to_file(path)
 		await _frames(10)
 		var dt := current_scene.find_child("DistantTree", true, false) as Node3D

@@ -1,0 +1,22 @@
+{
+	"name": "Fennel the Gardener",
+	"model": "res://Assets/Mini Forest/Models/GLB format/character-archer.glb",
+	"conversations": [
+		[
+			"Shh. I'm listening to the trees. They're gossiping about the wind again.",
+			"Don't worry, they like you. That one's just being polite. But that one really likes you."
+		],
+		[
+			"Things grow a little slower every year, you know. Not much. About a whisker. You'd only notice if you'd been counting whiskers for forty years.",
+			"Which I have. Someone's got to."
+		],
+		[
+			"My gran used to say every tree on every island is a cousin of the Great Tree. Distant cousins. The sort you only see at festivals.",
+			"So I water them all the same. Family's family, even the prickly ones. Especially the prickly ones."
+		],
+		[
+			"Leafwind sends seeds on the breeze. Seedhaven sends them in envelopes, with little thank-you notes.",
+			"I plant the seeds and keep the notes. Mostly I keep the notes."
+		]
+	]
+}

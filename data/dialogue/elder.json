@@ -1,0 +1,22 @@
+{
+	"name": "Elder Moss",
+	"model": "res://Assets/Mini Characters/Models/GLB format/character-male-g.glb",
+	"conversations": [
+		[
+			"Ah, a visitor! Come in, come in. Mind the rug, it's older than I am. Well. Nearly.",
+			"When I was a sprout, you could see the Great Tree from my window, bright as a lantern. These days I squint at it, and it squints back."
+		],
+		[
+			"Every spring we hold the Lantern Hush. The whole village stays quiet for one minute at dusk.",
+			"Nobody remembers why. My grandmother said it was so the Tree could hear us thinking. My grandfather said it was so he could finish his soup."
+		],
+		[
+			"There was a promise, once. Between the Great Tree and the islands. Roots for rain... or rain for roots... something like that.",
+			"I had it written down somewhere. Then I used the paper to wrap a pie. It was a very good pie."
+		],
+		[
+			"Rootholm folk are stubborn as stumps, Barkton folk argue about bark, and Leafwind folk never sit still.",
+			"Seedhaven? Lovely people. Terribly early risers. I don't trust anyone who's that cheerful before breakfast."
+		]
+	]
+}

@@ -1,0 +1,22 @@
+{
+	"name": "Wren the Tinkerer",
+	"model": "res://Assets/Mini Characters/Models/GLB format/character-worker.glb",
+	"conversations": [
+		[
+			"Careful, that anvil's warm. Everything in here is warm. Or sharp. Or both. Welcome!",
+			"I'm building a telescope to get a proper look at the Great Tree. Third try. The first two turned out to be excellent kaleidoscopes."
+		],
+		[
+			"Barkton sends me their broken gears, and I send them back fixed, with a little note about how they broke them.",
+			"They never read the notes. I can tell, because the same gear comes back every month looking guilty."
+		],
+		[
+			"Ever notice the Great Tree glows a bit dimmer every year? I measured it. With a candle and a very patient squint.",
+			"The numbers say it's fading. My gut says it's just tired. My gut's been right more often, honestly."
+		],
+		[
+			"This hammer belonged to my mother. The handle's new. And the head. But the spirit's the same.",
+			"That's an old Rootholm joke. They tell it about everything. Their bridges, their boats, their grandparents."
+		]
+	]
+}

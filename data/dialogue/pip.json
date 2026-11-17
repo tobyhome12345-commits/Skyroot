@@ -1,0 +1,22 @@
+{
+	"name": "Pip",
+	"model": "res://Assets/Mini Characters/Models/GLB format/character-female-b.glb",
+	"conversations": [
+		[
+			"Oh! Hi! Don't look at the bed, I made it myself. Mostly. The pillow helped.",
+			"If you lie really still by the window at night, you can see the Great Tree twinkle. Mum says it's fireflies. I say it's waving."
+		],
+		[
+			"I'm going to be a sky-sailor when I grow up. I'll visit ALL the islands!",
+			"Leafwind first, because they have kites the size of houses. Then Barkton, because I heard their bread is shaped like logs. That's just good design."
+		],
+		[
+			"Teddy says hello. He's very shy. He's been to Seedhaven, you know. Well. He was MADE in Seedhaven.",
+			"That counts as travelling. I've decided."
+		],
+		[
+			"At the Festival of Falling Leaves we throw the leaves UP instead of down. Nobody knows why!",
+			"I asked Elder Moss and he said 'tradition'. I asked again and he gave me a biscuit. I think the biscuit means he doesn't know either."
+		]
+	]
+}

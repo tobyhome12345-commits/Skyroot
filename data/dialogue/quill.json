@@ -1,0 +1,22 @@
+{
+	"name": "Scholar Quill",
+	"model": "res://Assets/Mini Characters/Models/GLB format/character-male-e.glb",
+	"conversations": [
+		[
+			"Ah, a reader? No? A listener, then. Even better. Listeners don't dog-ear the pages.",
+			"I'm writing a complete history of the islands. I'm on chapter one. I have been on chapter one for eleven years. It's a very thorough chapter."
+		],
+		[
+			"The oldest book in this room mentions 'the Promise of Root and Sky'. The rest of the page is a coffee stain.",
+			"I like to imagine it said something profound. Statistically, it was probably a recipe. Most very old pages are recipes."
+		],
+		[
+			"Seedhaven claims they planted the Great Tree. Rootholm claims they watered it. Leafwind claims they 'believed in it'.",
+			"Barkton claims nothing, but they wrote a forty-page reply to all three. I've read it twice. For fun."
+		],
+		[
+			"Hear the fire crackle? The old books say the Great Tree once hummed like that, warm and low, and every island could hear it.",
+			"It's been very quiet out there lately. Quiet isn't always bad, of course. Just... noticeable."
+		]
+	]
+}

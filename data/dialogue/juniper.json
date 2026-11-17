@@ -1,0 +1,22 @@
+{
+	"name": "Juniper the Traveller",
+	"model": "res://Assets/Mini Characters/Models/GLB format/character-female-c.glb",
+	"conversations": [
+		[
+			"Hello, hello! Juniper, traveller, teller of mostly-true stories. Just passing through. Like the wind, but with luggage.",
+			"I've been reading this notice board. Someone lost a goat. Someone else found a goat. I think it's a love story."
+		],
+		[
+			"On Leafwind there are bells in every tree. When the wind's just right, the whole island hums a tune.",
+			"Nobody remembers the words. They say it used to be sung to the Great Tree. These days it's mostly sung to the goats."
+		],
+		[
+			"Rootholm has roots so big they use them as bridges. Barkton paints their front doors to look like bark.",
+			"Very confusing for visitors. I once knocked on a tree for an hour. Lovely tree, though. Very patient."
+		],
+		[
+			"From Seedhaven's cliffs you can see the Great Tree. Dimmer than in the songs, mind.",
+			"But on a clear evening it still glows a little, like it's trying to remember something. I know the feeling."
+		]
+	]
+}

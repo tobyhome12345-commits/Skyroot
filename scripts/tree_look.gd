@@ -136,6 +136,9 @@ static func _ensure() -> void:
 static func _make(roughness: float) -> StandardMaterial3D:
 	var m := StandardMaterial3D.new()
 	m.roughness = roughness
+	# The generated trunk, roots and branches carry bark-patch shading as
+	# vertex colours (models without them count as white).
+	m.vertex_color_use_as_albedo = true
 	return m
 
 
@@ -147,6 +150,6 @@ static func _update_materials() -> void:
 	_wood.albedo_color = WOOD_WITHERED.lerp(WOOD_HEALTHY, health)
 	_leaf.albedo_color = LEAF_WITHERED.lerp(LEAF_HEALTHY, health)
 	_moss.albedo_color = MOSS_WITHERED.lerp(MOSS_HEALTHY, health)
-	_glow.albedo_color = Color(1.0, 0.72, 0.38)
-	_glow.emission = Color(1.0, 0.62, 0.28)
-	_glow.emission_energy_multiplier = lerpf(0.7, 2.0, health)
+	_glow.albedo_color = Color(0.55, 0.36, 0.2)
+	_glow.emission = Color(1.0, 0.6, 0.28)
+	_glow.emission_energy_multiplier = lerpf(0.35, 2.0, health)

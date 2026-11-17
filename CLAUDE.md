@@ -19,6 +19,7 @@ The Godot console exe is:
   Read the output; fix any `SCRIPT ERROR` / `ERROR` / `Parse Error` lines before moving on.
 - Gameplay test (movement, blocking, F3 debug): `godot_console --headless --path . --script res://tools/test_movement.gd` — must print `RESULT: ALL PASSED`.
 - Fit check (both islands: tiles, flush on ground, overlaps, colliders, gaps): `godot_console --headless --path . --script res://tools/check_fit.gd` must print `RESULT: ALL PASSED`. Run it after any change to props or models.
+- Tree check (Great Tree: vines and hanging pieces attached, knots / hollows in the bark, branches and leaves attached, roots resting on the ground and not clipping, fallen leaves on open grass): `godot_console --headless --path . --script res://tools/check_tree.gd`
 - Launch check (both islands: shared tiles, launch point on an edge facing sky, landing tile free and reachable, nothing cut off): `godot_console --headless --path . --script res://tools/check_islands.gd`
 - Travel test (launch prompt, menu, full glide cutscene, Esc / Space skip, landing, game state across trips): `godot_console --headless --path . --script res://tools/test_travel.gd`
 - Interior check (all 4 house interiors: tiles, flush stacking, overlaps, walls, colliders, floor, entrance→exit path, physics walk): `godot_console --headless --path . --script res://tools/check_interiors.gd` must print `RESULT: ALL PASSED`. Run it after any interior change.
@@ -78,9 +79,6 @@ The Godot console exe is:
 
 ## Screenshots
 
-- Take screenshots while working and show them to the user.
-- At least **one screenshot after each step**, plus extra ones after any big change.
-- How: `godot_console --path . --script res://tools/screenshot.gd -- screenshots/<name>.png`
-  This runs the project's main scene (if set) for a few frames and saves a PNG
-  (not headless — it needs the GPU to render).
-- Save them in `screenshots/` with a numbered name (e.g. `step03_walls.png`), then show them to the user.
+- **Do not take screenshots** unless the user explicitly asks for them. They use up a lot of the user's usage.
+- Verify work with the headless checks and tests instead.
+- If the user does ask: `godot_console --path . --script res://tools/screenshot.gd -- screenshots/<name>.png` (not headless; options are listed at the top of `tools/screenshot.gd`).

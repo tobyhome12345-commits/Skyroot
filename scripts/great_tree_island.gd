@@ -227,6 +227,8 @@ func _item_cells(it: Dictionary) -> Array[Vector2i]:
 
 func _nature(path: String, fill: float, rot: float, solid: bool) -> Dictionary:
 	var d := {"type": "nature", "model": path, "fill": fill, "rot": rot, "solid": solid}
+	if "log" in path or "stump" in path:
+		d["tree_wood"] = true
 	if not solid:
 		d["max_height"] = 0.7  # soft plants stay low enough to walk through
 	return d

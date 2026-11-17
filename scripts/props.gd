@@ -205,6 +205,8 @@ static func nature(p: Dictionary) -> Node3D:
 	var foot := Vector2(size) * Grid.TILE
 	var fitted := ModelLib.fitted(p["model"], foot, p.get("fill", 0.7), p.get("max_height", 0.0), p.get("rot", 0.0))
 	(root.get_node("Model") as Node3D).add_child(fitted)
+	if p.get("tree_wood", false):
+		TreeLook.apply_to(fitted)  # fallen wood matches the Great Tree's bark
 	if p.get("solid", true):
 		_collider_from_model(root)
 	else:

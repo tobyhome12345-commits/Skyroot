@@ -297,7 +297,7 @@ func _build_exit() -> void:
 	exit_root.name = "Exit"
 	add_child(exit_root)
 	var centre := cell_center(EXIT_CELL)
-	var door: Array = ModelLib.placed("F:doorway", 0.0, INTERIOR_SCALE)
+	var door: Array = ModelLib.placed("F:doorwayOpen", 0.0, INTERIOR_SCALE)
 	var door_node: Node3D = door[0]
 	var door_size: Vector3 = door[1]
 	door_node.name = "ExitDoor"

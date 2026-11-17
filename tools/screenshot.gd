@@ -11,6 +11,7 @@ extends SceneTree
 ##   frames=<n>       frames to wait after setup before capturing (default 10)
 ##   walk=<action>:<s> hold a move action (e.g. walk=move_down:1.5) first
 ##   scene=<res path> capture that scene instead of the main scene (e.g. an interior)
+##   player=<x>,<z>   put the player on that tile first (e.g. at a door, to show its prompt)
 
 var wait_frames := 10
 
@@ -56,6 +57,15 @@ func _capture() -> void:
 				call_group("debug_toggle", "set_debug_visible", true)
 			"frames":
 				wait_frames = int(parts[1])
+			"player":
+				# player=<x>,<z>: put the player on that tile first (e.g. at a door).
+				var pxz := parts[1].split(",")
+				var level := root.find_child("Island", true, false)
+				if level == null:
+					level = root.find_child("Interior", true, false)
+				var p := root.find_child("Player", true, false)
+				if p and level:
+					p.spawn_at(Grid.cell_center(Vector2i(int(pxz[0]), int(pxz[1])), level.map_size))
 			"notilt":
 				for layer in root.find_children("TiltShift", "CanvasLayer", true, false):
 					layer.visible = false

@@ -79,6 +79,6 @@ The Godot console exe is:
 
 ## Screenshots
 
-- **Do not take screenshots** unless the user explicitly asks for them. They use up a lot of the user's usage.
-- Verify work with the headless checks and tests instead.
-- If the user does ask: `godot_console --path . --script res://tools/screenshot.gd -- screenshots/<name>.png` (not headless; options are listed at the top of `tools/screenshot.gd`).
+- **Use screenshots sparingly**: at most a few per stage, only where a picture really helps (e.g. one before and one after a visual change). Never take dozens. They use up a lot of the user's usage.
+- Verify everything else with the headless checks and tests.
+- How: `godot_console --path . --script res://tools/screenshot.gd -- screenshots/<name>.png` (not headless; options are listed at the top of `tools/screenshot.gd`).

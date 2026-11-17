@@ -10,6 +10,9 @@ extends SceneTree
 ##  - a root doesn't start inside the trunk, floats above the grass, hangs
 ##    over the edge through the island's rock, or two roots overlap badly
 ##  - a fallen leaf isn't lying flat on open grass
+##  - any generated mesh (trunk, roots, branches, vines, entrance knot) has
+##    triangles facing inward where they can be seen (holes / inside-out),
+##    beyond tiny slivers where two pieces cross
 ## Usage: godot_console --headless --path . --script res://tools/check_tree.gd
 ##   add "-- selftest" to plant known problems and prove they're caught.
 
@@ -37,6 +40,7 @@ func _run() -> void:
 	_check_canopy()
 	_check_roots()
 	_check_fallen_leaves()
+	_check_faces()
 	print("RESULT: %s (%d checks: %d hanging pieces, %d roots, %d branches, %d leaf blobs)" % [
 		"ALL PASSED" if _failures == 0 else "%d FAILED" % _failures, _checks,
 		_tree.hangers.size(), _tree.root_lines.size(), _tree.branches.size(), _tree.canopy.size()])
@@ -210,6 +214,27 @@ func _check_fallen_leaves() -> void:
 		if absf(t.origin.y - 0.012) > 0.001 or not _tree.island.is_ground(cell) or _tree.claimed.has(cell) or _tree.island.is_path(cell):
 			bad += 1
 	_expect(bad == 0 and spots.size() > 50, "all %d fallen leaves lie flat on open grass (%d don't)" % [spots.size(), bad])
+
+
+## Godot draws a triangle only from its front (clockwise) side. Every face
+## of the generated tree meshes must point outwards, or the game shows holes
+## and the inside of the shape.
+func _check_faces() -> void:
+	for mi in _tree.find_children("*", "MeshInstance3D", true, false):
+		var mesh := (mi as MeshInstance3D).mesh as ArrayMesh
+		if mesh == null:
+			continue
+		var arr := mesh.surface_get_arrays(0)
+		var v: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
+		var n: PackedVector3Array = arr[Mesh.ARRAY_NORMAL]
+		var bad_area := 0.0
+		for i in range(0, v.size() - 2, 3):
+			var face := (v[i + 2] - v[i]).cross(v[i + 1] - v[i])
+			if face.dot(n[i] + n[i + 1] + n[i + 2]) < 0.0:
+				var c: Vector3 = (v[i] + v[i + 1] + v[i + 2]) / 3.0
+				if _outside_trunk(c) > 0.0 and c.y > -0.05:
+					bad_area += face.length() / 2.0
+		_expect(bad_area < 0.05, "%s has no visible inside-out faces (%.3f m2)" % [mi.name, bad_area])
 
 
 func _break_things() -> void:

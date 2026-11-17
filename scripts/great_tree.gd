@@ -142,7 +142,7 @@ func _build_trunk() -> void:
 		for j in TRUNK_SIDES:
 			var j2 := (j + 1) % TRUNK_SIDES
 			var quad := [rings[i][j], rings[i][j2], rings[i + 1][j2], rings[i + 1][j]]
-			for k in [0, 2, 1, 0, 3, 2]:
+			for k in [0, 1, 2, 0, 2, 3]:  # Godot draws clockwise faces: outward
 				var v: Vector3 = quad[k]
 				var axis := trunk_axis(maxf(v.y, 0.0))
 				st.set_normal(Vector3(v.x - axis.x, 0.0, v.z - axis.z).normalized())
@@ -182,7 +182,8 @@ func _tube(st: SurfaceTool, points: Array, radii: Array, sides: int, color_fn :=
 	var rings: Array = []
 	for i in n:
 		var p: Vector3 = points[i]
-		var tangent: Vector3 = ((points[mini(i + 1, n - 1)] as Vector3) - (points[maxi(i - 1, 0)] as Vector3)).normalized()
+		# Direction averaged over a few points, so tight bends don't fold the tube.
+		var tangent: Vector3 = ((points[mini(i + 2, n - 1)] as Vector3) - (points[maxi(i - 2, 0)] as Vector3)).normalized()
 		var normal := prev_normal
 		if normal == Vector3.ZERO:
 			normal = tangent.cross(Vector3.UP if absf(tangent.y) < 0.9 else Vector3.RIGHT).normalized()
@@ -199,7 +200,7 @@ func _tube(st: SurfaceTool, points: Array, radii: Array, sides: int, color_fn :=
 		for j in sides:
 			var j2 := (j + 1) % sides
 			var quad := [rings[i][j], rings[i][j2], rings[i + 1][j2], rings[i + 1][j]]
-			for k in [0, 1, 2, 0, 2, 3]:
+			for k in [0, 2, 1, 0, 3, 2]:  # Godot draws clockwise faces: outward
 				var v: Array = quad[k]
 				st.set_normal(v[1])
 				st.set_color(color_fn.call(v[0]) if color_fn.is_valid() else Color.WHITE)
@@ -278,10 +279,20 @@ func _build_roots() -> void:
 func _add_root(pts: Array, radii: Array, kind: String, index: int) -> void:
 	# Outside the trunk, on the island, a root lies on (half in) the ground:
 	# it never bows up into the air.
+	for pass_i in 3:
+		for i in pts.size():
+			var p: Vector3 = pts[i]
+			var on_island: bool = island.is_ground(Grid.world_to_cell(position + p, island.map_size))
+			if on_island and _outside_trunk(p) > -0.5:
+				pts[i] = Vector3(p.x, minf(p.y, float(radii[i]) * 0.55), p.z)
+		# Ease out the kinks the flattening leaves (the ends stay put).
+		var eased := pts.duplicate()
+		for i in range(1, pts.size() - 1):
+			eased[i] = ((pts[i - 1] as Vector3) + (pts[i] as Vector3) * 2.0 + (pts[i + 1] as Vector3)) / 4.0
+		pts.assign(eased)
 	for i in pts.size():
 		var p: Vector3 = pts[i]
-		var on_island: bool = island.is_ground(Grid.world_to_cell(position + p, island.map_size))
-		if on_island and _outside_trunk(p) > -0.5:
+		if island.is_ground(Grid.world_to_cell(position + p, island.map_size)) and _outside_trunk(p) > -0.5:
 			pts[i] = Vector3(p.x, minf(p.y, float(radii[i]) * 0.55), p.z)
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -393,13 +404,14 @@ func _build_entrance() -> void:
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	# Roots crossing in front of the opening, each anchored in the bark at
 	# one end and in the ground (or the bark) at the other.
-	for seg in [[-25.0, 4.2, 22.0, 0.0, 0.65], [25.0, 4.0, -22.0, 0.0, 0.65], [-14.0, 2.0, 15.0, 2.6, 0.42]]:
+	for seg in [[-25.0, 4.2, 22.0, 0.0, 0.5], [25.0, 4.0, -22.0, 0.0, 0.5], [-14.0, 2.0, 15.0, 2.6, 0.34]]:
 		var a := trunk_surface(front + deg_to_rad(seg[0]) / 4.0, seg[1], 0.35)
 		var b := trunk_surface(front + deg_to_rad(seg[2]) / 4.0, seg[3], 0.35)
 		if seg[3] == 0.0:
 			b += Vector3(0, -0.3, 0.6)  # its foot goes into the ground
-		var mid := (a + b) / 2.0 + Vector3(0, 0, 1.1)
-		var pts := _smooth([a, mid, b], 8)
+		# Leaves the bark outwards, arches over, and goes back in gently.
+		var out := Vector3(0, 0, 1)
+		var pts := _smooth([a, a + out * 0.9 + (b - a) * 0.15, b + out * 0.9 - (b - a) * 0.15, b], 10)
 		_tube(st, pts, _taper(pts.size(), seg[4], seg[4] * 0.8), 12, _bark_patch)
 		hangers.append({"points": pts, "radius": seg[4], "attach": "trunk", "parent": -1,
 				"end": "trunk" if seg[3] > 0.0 else "ground", "kind": "entrance_root"})
@@ -559,7 +571,8 @@ func _build_vines() -> void:
 		for i in steps + 1:
 			var y := h * (1.0 - float(i) / steps)
 			var wa := a + 0.08 * sin(y * 1.3 + v[0])
-			vpts.append(trunk_surface(wa, y) + Vector3(cos(wa), 0, sin(wa)) * 0.12)
+			# Lies on the bark (its own radius out from the surface), never in it.
+			vpts.append(trunk_surface(wa, y) + Vector3(cos(wa), 0, sin(wa)) * 0.17)
 		_tube(st, vpts, _taper(vpts.size(), 0.14, 0.12), 6)
 		hangers.append({"points": vpts, "radius": 0.14, "attach": "trunk", "parent": -1, "end": "ground", "kind": "clinging_vine"})
 	var mi := MeshInstance3D.new()

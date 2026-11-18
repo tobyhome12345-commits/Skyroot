@@ -179,6 +179,7 @@ static func _tri(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, col: Color
 		n = -n
 	for v in [a, b, c]:
 		st.set_color(col)
+		st.set_uv(Vector2.ZERO)  # every vertex has a UV, so tubes can share the mesh
 		st.set_normal(n)
 		st.add_vertex(v)
 

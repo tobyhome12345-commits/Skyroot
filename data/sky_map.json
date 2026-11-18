@@ -1,0 +1,14 @@
+{
+	"about": "The shared sky. Every island has one fixed place in it: a compass bearing ('bearing', degrees clockwise from north, where the game camera looks), how far below the horizon it sits ('below', degrees) and how far away it is ('distance', metres). From every other island it appears in exactly that place, so the world always looks the same. 'landmark' is the low-detail version drawn there (see scripts/distant_landmark.gd). Glides head off towards the destination's place and arrive from the place of the island you left. The places are chosen so each island shows from every other island (from its landing tile, or where that island hides it, from elsewhere on it) without overlapping (tools/check_sky.gd). The game camera looks north and down, so the places sit north-west, north and east, below the horizon. null = not placed yet.",
+	"islands": {
+		"pebblenook": {"bearing": 47.0, "below": 17.5, "distance": 340.0, "landmark": "pebblenook"},
+		"great_tree": {"bearing": 5.8, "below": 25.0, "distance": 438.0, "landmark": "great_tree"},
+		"leafwind": {"bearing": -45.0, "below": 17.5, "distance": 380.0, "landmark": "leafwind"},
+		"lookout_isle": {"bearing": 36.0, "below": 81.0, "distance": 270.0, "landmark": "lookout_isle"},
+		"traders_rock": {"bearing": 60.0, "below": 71.0, "distance": 280.0, "landmark": "traders_rock"},
+		"seed_isle": {"bearing": 75.0, "below": 62.0, "distance": 280.0, "landmark": "seed_isle"},
+		"rootholm": null,
+		"barkton": null,
+		"seedhaven": null
+	}
+}

@@ -105,11 +105,20 @@ func island_scene(island_id: String) -> String:
 	return OUTSIDE_SCENE
 
 
+## The glide in progress (or the last one): where from and where to. The
+## glide cutscene's "depart@" / "arrive@" anchors use them to head for the
+## destination's place in the sky and arrive from the island left behind.
+var glide_from := ""
+var glide_dest := ""
+
+
 ## Fly to another island with the glide cutscene.
 func glide_to(island_id: String) -> void:
 	if input_locked:
 		return
 	state["trips"] += 1
+	glide_from = state["island"]
+	glide_dest = island_id
 	var cutscene := GLIDE_CUTSCENE
 	for i in islands():
 		if i["id"] == island_id and i.has("cutscene"):

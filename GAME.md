@@ -17,6 +17,11 @@
 - **The traveller** (the player) is a human from far below the clouds, carrying a withered seed from the Great Tree that has been passed down in their family. It glows when they are near an island that needs help.
 - **Colour level:** the world's colour is one value (`Game.colour_level`, 0 = drained, 1 = full). For now only the opening scene uses it; later the world's joy will drive it.
 
+## The shared sky
+
+- Every island has one fixed place in the sky (`data/sky_map.json`), and appears there, as a small low-detail landmark, from every other island: Leafwind's platforms, windmill and canopy; Pebblenook's houses; the small islands as tiny floating silhouettes; the Great Tree far to the north. They sit among clouds, bob gently, and fade into the distance haze. Rootholm, Barkton and Seedhaven have empty places for later.
+- Glides head off towards the destination's place in the sky and arrive from the place of the island left behind (turning at most 90° from the launch ramp, so they never fly back over an island).
+
 ## Stages
 
 1. **Pebblenook** (start island, working name): a grid-built island with houses, trees, a well, a notice board, a walkable player and a fixed follow camera.

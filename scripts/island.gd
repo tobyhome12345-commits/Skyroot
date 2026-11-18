@@ -208,28 +208,19 @@ func extra_blocked_cells() -> Dictionary:
 	return {}
 
 
-## The Great Tree, low-detail, far off in the sky, placed from the world
-## positions in data/islands.json so every island sees it in the same place.
+## Every other island, far off in the sky: a low-detail landmark at its
+## fixed place in the shared sky (data/sky_map.json), the same place from
+## every island. Decoration only (no collision, no shadows).
 func _add_distant_views() -> void:
-	if island_id == "great_tree":
-		return
-	var here := Vector3.ZERO
-	var there := Vector3.ZERO
-	var found := false
-	for i in Game.islands():
-		if i.has("world"):
-			var w: Array = i["world"]
-			if i["id"] == island_id:
-				here = Vector3(w[0], w[1], w[2])
-			elif i["id"] == "great_tree":
-				there = Vector3(w[0], w[1], w[2])
-				found = true
-	if not found:
-		return
-	var far := DistantTree.new()
-	far.name = "DistantTree"
-	add_child(far)
-	far.position = there - here
+	var sky := Node3D.new()
+	sky.name = "DistantViews"
+	add_child(sky)
+	for id: String in SkyMap.ids():
+		if id == island_id:
+			continue
+		var lm := DistantLandmark.create(id)
+		lm.position = SkyMap.offset(id)
+		sky.add_child(lm)
 
 
 ## Villagers outside: id (data/dialogue/<id>.json), tile, which way they face.
@@ -321,14 +312,46 @@ func cutscene_anchor(anchor_name: String) -> Transform3D:
 	if anchor_name == "start":
 		return global_transform * Transform3D(Basis(), cell_pos(start_cell))
 	if anchor_name == "distant_tree":
-		var far := get_node_or_null("DistantTree") as Node3D
+		var far := get_node_or_null("DistantViews/DistantTree") as Node3D
 		if far:
 			return Transform3D(Basis(), far.global_position)
+	# "depart@6.5": the launch frame turned (about the vertical line 6.5 m
+	# out over the ramp) to head for the glide's destination in the sky.
+	# "arrive@11": the same, turned to come in from the island the glide
+	# left. Points on that line don't move, so shots join up seamlessly.
+	if anchor_name.begins_with("depart@") or anchor_name.begins_with("arrive@"):
+		var out := float(anchor_name.get_slice("@", 1))
+		var toward: String = Game.glide_dest if anchor_name.begins_with("depart") else Game.glide_from
+		return _glide_anchor(out, toward)
 	if anchor_name == "launch" and landing_cell.x >= 0:
 		var fwd := Vector3(launch_dir.x, 0.0, launch_dir.y)
 		var basis := Basis(fwd.cross(Vector3.UP) * -1.0, Vector3.UP, fwd)
 		return global_transform * Transform3D(basis, cell_pos(landing_cell))
 	return global_transform
+
+
+## The launch frame turned about the vertical line `out` metres out along
+## it, so its +z heads for `toward_id`'s place in the sky; never more than
+## GLIDE_MAX_TURN from straight out, so a glide never doubles back over the
+## island.
+const GLIDE_MAX_TURN := 90.0
+
+
+func _glide_anchor(out: float, toward_id: String) -> Transform3D:
+	var launch := cutscene_anchor("launch")
+	return launch * Transform3D(Basis(Vector3.UP, glide_turn(toward_id)), Vector3(0.0, 0.0, out)) 			* Transform3D(Basis(), Vector3(0.0, 0.0, -out))
+
+
+## How far (radians, about +y) a glide turns from straight out over the
+## launch ramp to head for `toward_id` (clamped to GLIDE_MAX_TURN).
+func glide_turn(toward_id: String) -> float:
+	var want := SkyMap.heading(toward_id)
+	if want == Vector3.ZERO or launch_dir == Vector2i.ZERO:
+		return 0.0
+	var out := Vector3(launch_dir.x, 0.0, launch_dir.y)
+	var angle := out.signed_angle_to(want, Vector3.UP)
+	var limit := deg_to_rad(GLIDE_MAX_TURN)
+	return clampf(angle, -limit, limit)
 
 
 ## Invisible walls on every empty tile that touches the island, so the

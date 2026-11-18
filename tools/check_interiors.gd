@@ -20,6 +20,10 @@ const ROOMS := [
 	"res://scenes/interiors/kite_workshop.tscn",
 	"res://scenes/interiors/lookout.tscn",
 	"res://scenes/interiors/family_home.tscn",
+	"res://scenes/interiors/captain_cabin.tscn",
+	"res://scenes/interiors/rope_loft.tscn",
+	"res://scenes/interiors/chime_workshop.tscn",
+	"res://scenes/interiors/bakehouse.tscn",
 ]
 const TOL := 0.01
 

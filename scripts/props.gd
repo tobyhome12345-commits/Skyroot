@@ -14,6 +14,8 @@ const FOOT_1 := Vector2(2.0, 2.0)  # one tile in metres
 ## Lit room shell inside each house (see _add_lit_interior).
 const INTERIOR_HALF := 1.6
 const INTERIOR_HEIGHT := 1.95
+## Town Kit walls are this thick (in module units: 0.1 of a 1-unit module).
+const WALL_T := 0.1
 
 
 ## Builds a prop from a layout entry (see island.gd).
@@ -79,18 +81,20 @@ static func house(red_roof: bool, wood: bool) -> Node3D:
 	var model := root.get_node("Model") as Node3D
 	var k := ModelLib.TOWN_SCALE
 	var wall := "wall-wood" if wood else "wall"
+	var inside := func(m: Vector2i) -> bool: return m.x >= 0 and m.y >= 0 and m.x < 2 and m.y < 2
 	for mx in 2:
 		for mz in 2:
 			var c := Vector3((mx - 0.5) * k, 0.0, (mz - 0.5) * k)
+			var m := Vector2i(mx, mz)
 			if mx == 1:
-				model.add_child(ModelLib.piece(T + (wall + "-window-shutters" if mz == 0 else wall) + ".glb", k, c, 0.0))
+				model.add_child(wall_piece(T + (wall + "-window-shutters" if mz == 0 else wall) + ".glb", k, c, 0.0, m, inside))
 			if mx == 0:
-				model.add_child(ModelLib.piece(T + (wall + "-window-shutters" if mz == 1 else wall) + ".glb", k, c, 180.0))
+				model.add_child(wall_piece(T + (wall + "-window-shutters" if mz == 1 else wall) + ".glb", k, c, 180.0, m, inside))
 			if mz == 0:
-				model.add_child(ModelLib.piece(T + wall + ".glb", k, c, 90.0))
+				model.add_child(wall_piece(T + wall + ".glb", k, c, 90.0, m, inside))
 			if mz == 1:
 				var front := wall + ("-door" if mx == 0 else "-window-shutters")
-				model.add_child(ModelLib.piece(T + front + ".glb", k, c, -90.0))
+				model.add_child(wall_piece(T + front + ".glb", k, c, -90.0, m, inside))
 		# Two roof slopes meet in the middle: a gable roof over 2 x 2 tiles.
 	for mz in 2:
 		var z := (mz - 0.5) * k
@@ -107,18 +111,34 @@ static func house(red_roof: bool, wood: bool) -> Node3D:
 	return root
 
 
+## One Town Kit wall module on an edge of building module `m` (turned by
+## `rot`: 0 = east edge, 90 = north, 180 = west, -90 = south). Where two
+## walls meet at an outer corner their ends would overlap, and the tops
+## (in the same plane) would flicker. So each corner belongs to exactly one
+## wall, pinwheel style: a wall whose +z end (after turning) reaches a
+## corner is shortened by the wall's thickness there. `inside` says which
+## modules are part of the building.
+static func wall_piece(path: String, k: float, centre: Vector3, rot: float, m: Vector2i, inside: Callable) -> Node3D:
+	var n := ModelLib.piece(path, k, centre, rot)
+	var along := Vector2i(roundi(sin(deg_to_rad(rot))), roundi(cos(deg_to_rad(rot))))
+	if not inside.call(m + along):
+		n.scale.z = k * (1.0 - WALL_T)
+		n.position -= n.basis.z.normalized() * (k * WALL_T / 2.0)
+	return n
+
+
 ## The Town Kit walls have open windows and door frames, and the house is a
 ## hollow shell, so without this you'd see the grass inside. A warm, softly
 ## glowing room shell just inside the walls makes the windows look lit.
 ## It stays inside the window shutters (which reach 1.65 m from the centre)
 ## and under the roof, so it never pokes through or clips.
-static func _add_lit_interior(model: Node3D) -> void:
+static func _add_lit_interior(model: Node3D, half := INTERIOR_HALF, height := INTERIOR_HEIGHT) -> void:
 	var shell := MeshInstance3D.new()
 	shell.name = "LitInterior"
 	var box := BoxMesh.new()
-	box.size = Vector3(INTERIOR_HALF * 2.0, INTERIOR_HEIGHT, INTERIOR_HALF * 2.0)
+	box.size = Vector3(half * 2.0, height, half * 2.0)
 	shell.mesh = box
-	shell.position = Vector3(0.0, INTERIOR_HEIGHT / 2.0, 0.0)
+	shell.position = Vector3(0.0, height / 2.0, 0.0)
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = Color(0.36, 0.22, 0.14)
 	mat.emission_enabled = true
@@ -153,13 +173,15 @@ static func well() -> Node3D:
 	var ring := ModelLib.instance(T + "fountain-round.glb")  # 2 x 0.28 x 2
 	ring.scale = Vector3(0.75, 2.8, 0.75)  # 1.5 m wide, 0.78 m tall
 	model.add_child(ring)
-	for x in [-0.6, 0.6]:
+	# Posts stand just outside the basin's rim (inside it, their feet would
+	# share the basin floor's surface and flicker).
+	for x in [-0.88, 0.88]:
 		var post := ModelLib.instance(T + "pillar-wood.glb")  # 0.16 x 1 x 0.16
 		post.scale = Vector3(1.2, 1.9, 1.2)
 		post.position = Vector3(x, 0.0, 0.0)
 		model.add_child(post)
 	var roof := ModelLib.instance(T + "roof-point.glb")  # 1.1 x 0.5 x 1.1
-	roof.scale = Vector3.ONE * 1.4
+	roof.scale = Vector3.ONE * 1.65
 	roof.position = Vector3(0.0, 1.9, 0.0)
 	model.add_child(roof)
 	var bucket := ModelLib.instance(S + "bucket.glb")  # 0.144 x 0.192

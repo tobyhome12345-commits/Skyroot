@@ -6,7 +6,7 @@ extends SceneTree
 ## Usage: godot_console --headless --path . --script res://tools/test_doors.gd
 
 ## Islands with houses, and how many doors each has.
-const ISLANDS := {"res://scenes/pebblenook.tscn": 4, "res://scenes/leafwind.tscn": 3}
+const ISLANDS := {"res://scenes/pebblenook.tscn": 4, "res://scenes/leafwind.tscn": 7}
 
 var _failures := 0
 var _game: Node  # the Game autoload (looked up at runtime)

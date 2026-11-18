@@ -23,7 +23,7 @@ extends SceneTree
 ##   add "-- selftest" to plant problems and prove they're caught.
 
 const SCENE := "res://scenes/leafwind.tscn"
-const INTERIORS := ["res://scenes/interiors/kite_workshop.tscn", "res://scenes/interiors/lookout.tscn", "res://scenes/interiors/family_home.tscn"]
+const INTERIORS := ["res://scenes/interiors/kite_workshop.tscn", "res://scenes/interiors/lookout.tscn", "res://scenes/interiors/family_home.tscn", "res://scenes/interiors/captain_cabin.tscn", "res://scenes/interiors/rope_loft.tscn", "res://scenes/interiors/chime_workshop.tscn", "res://scenes/interiors/bakehouse.tscn"]
 const TOL := 0.03
 const DIRS: Array[Vector2i] = [Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1)]
 const KEYS := {Vector2i(1, 0): "move_right", Vector2i(-1, 0): "move_left", Vector2i(0, -1): "move_up", Vector2i(0, 1): "move_down"}

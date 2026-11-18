@@ -23,7 +23,7 @@ const PART_GAP := 0.08
 ## Rugs are scaled to fill this share of their footprint.
 const RUG_FILL := 0.9
 
-@export_enum("elder", "bedroom", "workshop", "library", "kite_workshop", "lookout", "family_home") var room := "elder"
+@export_enum("elder", "bedroom", "workshop", "library", "kite_workshop", "lookout", "family_home", "captain_cabin", "rope_loft", "chime_workshop", "bakehouse") var room := "elder"
 @export var player_path: NodePath
 
 ## Tiles taken by objects (cell -> object name).
@@ -65,7 +65,7 @@ func _rooms() -> Dictionary:
 	return rooms
 
 
-## Leafwind's three rooms.
+## Leafwind's rooms: three houses and four huts.
 func _leafwind_rooms() -> Dictionary:
 	return {
 		# 5. The kite-maker's workshop: kites on racks, cloth, tools, rope.
@@ -142,6 +142,106 @@ func _leafwind_rooms() -> Dictionary:
 				{"id": "F:lampRoundFloor", "cell": Vector2i(4, 5), "light": true},
 				{"id": "F:pottedPlant", "cell": Vector2i(5, 5), "against": ["east"]},
 				{"type": "deco", "deco": "planter", "flower": "flower_redA", "cell": Vector2i(0, 4), "against": ["west"]},
+			],
+		},
+		# 8. Old Captain Brisk's cabin (north hut): sea chest, bunk, a map
+		# table, his telescope, a cart wheel for a ship's wheel.
+		"captain_cabin": {
+			"wall": "wall-wood", "windows": [Vector2i(1, 0), Vector2i(4, 0), Vector2i(5, 3)],
+			"objects": [
+				{"row": [["S:chest", 0.0, []], ["S:barrel", 0.0, []]],
+					"cell": Vector2i(0, 0), "size": Vector2i(2, 1), "against": ["north", "west"]},
+				{"row": [["F:bookcaseOpen", 0.0, [["F:books", 0.0]]], ["F:bookcaseOpenLow", 0.0, [["S:bottle", 0.0]]]],
+					"cell": Vector2i(2, 0), "size": Vector2i(2, 1), "against": ["north"]},
+				{"type": "deco", "deco": "telescope", "cell": Vector2i(4, 0), "against": ["north"]},
+				{"id": "F:pottedPlant", "cell": Vector2i(5, 0), "against": ["north", "east"]},
+				{"id": "F:bedSingle", "cell": Vector2i(0, 1), "size": Vector2i(2, 2), "against": ["west"]},
+				{"type": "deco", "deco": "rope_coils", "cell": Vector2i(5, 1), "against": ["east"]},
+				{"id": "F:table", "cell": Vector2i(3, 2), "size": Vector2i(2, 1),
+					"top": [["F:books", 10.0], ["S:bottle-large", 0.0]],
+					"parts": [["F:chair", 90.0, "west", []]]},
+				{"id": "T:wheel", "cell": Vector2i(5, 2), "rot": 90.0, "against": ["east"]},
+				{"id": "F:sideTable", "cell": Vector2i(0, 3), "rot": 90.0, "against": ["west"],
+					"top": [["F:lampRoundTable", 0.0]], "light": true},
+				{"id": "F:rugRectangle", "cell": Vector2i(3, 3), "size": Vector2i(2, 1), "flat": true},
+				{"id": "S:barrel-open", "cell": Vector2i(0, 4), "against": ["west"]},
+				{"id": "F:lampRoundFloor", "cell": Vector2i(5, 4), "against": ["east"], "light": true},
+				{"id": "F:coatRackStanding", "cell": Vector2i(0, 5)},
+				{"id": "S:box", "cell": Vector2i(5, 5), "rot": 20.0, "against": ["east"]},
+			],
+		},
+		# 9. Maude the rope-weaver's loft (north-east hut): coils of rope
+		# everywhere, her workbench, a bed and a reading chair.
+		"rope_loft": {
+			"wall": "wall-wood", "windows": [Vector2i(2, 0), Vector2i(0, 2), Vector2i(5, 3)],
+			"objects": [
+				{"row": [["S:workbench", 0.0, [["S:tool-hammer", 0.0]]], ["F:bookcaseOpenLow", 0.0, [["F:books", 0.0]]]],
+					"cell": Vector2i(0, 0), "size": Vector2i(2, 1), "against": ["north", "west"], "light": true},
+				{"type": "deco", "deco": "rope_coils", "cell": Vector2i(2, 0), "against": ["north"]},
+				{"type": "deco", "deco": "rope_coils", "rot": 60.0, "cell": Vector2i(3, 0), "against": ["north"]},
+				{"id": "F:bedSingle", "cell": Vector2i(4, 0), "size": Vector2i(2, 2), "against": ["north", "east"]},
+				{"id": "S:barrel", "cell": Vector2i(0, 1), "against": ["west"]},
+				{"type": "deco", "deco": "rope_coils", "rot": -40.0, "cell": Vector2i(0, 2), "against": ["west"]},
+				{"id": "F:rugRound", "cell": Vector2i(2, 2), "size": Vector2i(2, 2), "flat": true},
+				{"id": "F:lampRoundFloor", "cell": Vector2i(5, 2), "against": ["east"], "light": true},
+				{"id": "F:pottedPlant", "cell": Vector2i(5, 3), "against": ["east"]},
+				{"id": "F:loungeChair", "cell": Vector2i(0, 3), "size": Vector2i(2, 1), "rot": 90.0, "against": ["west"],
+					"parts": [["F:sideTable", 90.0, "east", [["F:plantSmall1", 0.0]]]]},
+				{"id": "F:coatRackStanding", "cell": Vector2i(0, 5)},
+				{"type": "deco", "deco": "planter", "flower": "flower_purpleA", "cell": Vector2i(4, 5)},
+				{"id": "S:chest", "cell": Vector2i(5, 5), "rot": -90.0, "against": ["east"]},
+			],
+		},
+		# 10. Bellamy the chime-maker's workshop (chime corner hut): chimes
+		# waiting to be tuned, a grinder and anvil, a cluttered table.
+		"chime_workshop": {
+			"wall": "wall", "windows": [Vector2i(1, 0), Vector2i(4, 0), Vector2i(0, 3), Vector2i(5, 3)],
+			"objects": [
+				{"row": [["S:workbench", 0.0, [["S:tool-hammer", 30.0]]], ["S:workbench-grind", 0.0, []]],
+					"cell": Vector2i(0, 0), "size": Vector2i(2, 1), "against": ["north", "west"], "light": true},
+				{"type": "deco", "deco": "wind_chime", "cell": Vector2i(2, 0), "against": ["north"]},
+				{"type": "deco", "deco": "wind_chime", "rot": 90.0, "cell": Vector2i(3, 0), "against": ["north"]},
+				{"row": [["F:bookcaseOpen", 0.0, [["F:books", 0.0]]], ["S:workbench-anvil", 0.0, []]],
+					"cell": Vector2i(4, 0), "size": Vector2i(2, 1), "against": ["north", "east"]},
+				{"type": "deco", "deco": "wind_chime", "rot": 180.0, "cell": Vector2i(0, 2), "against": ["west"]},
+				{"type": "deco", "deco": "wind_chime", "rot": 200.0, "cell": Vector2i(5, 2), "against": ["east"]},
+				{"id": "F:table", "cell": Vector2i(2, 2), "size": Vector2i(2, 1),
+					"top": [["S:bottle", 0.0], ["F:books", 30.0]],
+					"parts": [["F:chair", 90.0, "west", []]]},
+				{"id": "F:sideTable", "cell": Vector2i(0, 3), "rot": 90.0, "against": ["west"],
+					"top": [["F:lampRoundTable", 0.0]], "light": true},
+				{"id": "F:lampSquareFloor", "cell": Vector2i(5, 3), "against": ["east"], "light": true},
+				{"id": "S:box", "cell": Vector2i(0, 4), "against": ["west"]},
+				{"id": "S:barrel", "cell": Vector2i(5, 4), "against": ["east"]},
+				{"id": "F:coatRackStanding", "cell": Vector2i(0, 5)},
+				{"id": "F:cardboardBoxOpen", "cell": Vector2i(4, 5)},
+				{"id": "F:pottedPlant", "cell": Vector2i(5, 5), "against": ["east"]},
+			],
+		},
+		# 11. Barnaby the baker's bakehouse (south-west hut): his oven,
+		# counters of bread and pie, flour barrels, a table with a cake.
+		"bakehouse": {
+			"wall": "wall", "windows": [Vector2i(1, 0), Vector2i(0, 3), Vector2i(5, 3)],
+			"objects": [
+				{"row": [["F:kitchenCabinet", 0.0, [["K:loaf", 0.0]]], ["F:kitchenStove", 0.0, []], ["F:kitchenCabinet", 0.0, [["K:pie", 0.0]]]],
+					"cell": Vector2i(0, 0), "size": Vector2i(3, 1), "against": ["north", "west"]},
+				{"type": "deco", "deco": "oven", "cell": Vector2i(3, 0), "against": ["north"]},
+				{"row": [["F:bookcaseOpen", 0.0, [["K:loaf-round", 0.0]]], ["F:kitchenFridgeSmall", 0.0, []]],
+					"cell": Vector2i(4, 0), "size": Vector2i(2, 1), "against": ["north", "east"]},
+				{"row": [["S:barrel", 0.0, []], ["S:barrel-open", 0.0, []]],
+					"axis": "z", "cell": Vector2i(5, 1), "size": Vector2i(1, 2), "against": ["east"]},
+				{"id": "F:table", "cell": Vector2i(0, 2), "size": Vector2i(2, 1),
+					"top": [["K:cake", 0.0], ["K:cutting-board", 30.0]],
+					"parts": [["F:chair", 90.0, "west", []], ["F:chair", -90.0, "east", []]]},
+				{"id": "F:rugRectangle", "cell": Vector2i(3, 2), "size": Vector2i(2, 1), "flat": true},
+				{"id": "F:sideTable", "cell": Vector2i(0, 3), "rot": 90.0, "against": ["west"],
+					"top": [["F:lampRoundTable", 0.0]], "light": true},
+				{"id": "F:lampRoundFloor", "cell": Vector2i(5, 3), "against": ["east"], "light": true},
+				{"id": "S:barrel", "cell": Vector2i(0, 4), "against": ["west"]},
+				{"id": "S:box", "cell": Vector2i(5, 4), "rot": 15.0, "against": ["east"]},
+				{"id": "F:coatRackStanding", "cell": Vector2i(0, 5)},
+				{"type": "deco", "deco": "planter", "flower": "flower_yellowB", "cell": Vector2i(4, 5)},
+				{"id": "F:pottedPlant", "cell": Vector2i(5, 5), "against": ["east"]},
 			],
 		},
 	}

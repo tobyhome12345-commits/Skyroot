@@ -21,10 +21,15 @@ const BLUE := Color(0.63, 0.79, 0.9)
 const WOOD := Color(0.6, 0.42, 0.28)
 const ROPE := Color(0.78, 0.68, 0.5)
 const KITE_COLOURS := {"yellow": YELLOW, "blue": BLUE, "white": WHITE, "green": GREEN}
-## Windmill sails: hub height (m) and diameter (m). The sails sit on their
-## own "Sails" node, pivoting on the hub, so they can turn one day.
+## Windmill sails: hub height (m), size and how far in front of the tower's
+## face the hub sits (clear of the roof's eaves, so they could turn). The
+## sails sit on their own "Sails" node, pivoting on the hub.
 const SAIL_HUB_HEIGHT := 4.3
 const SAIL_SCALE := 1.25
+const SAIL_OUT := 0.55
+## Lit room shell inside a one-module building (hut, windmill tower): it
+## stays inside the walls' window shutters, so it never pokes through.
+const SMALL_INTERIOR_HALF := 0.6
 
 
 ## Builds a Leafwind prop, or returns null for a type this file doesn't know.
@@ -79,15 +84,21 @@ static func windmill(rot := 0.0) -> Node3D:
 		var y := float(storey) * k
 		for side in [[0.0, "wall-wood"], [90.0, "wall-wood"], [180.0, "wall-wood-window-small"],
 				[-90.0, "wall-wood-door" if storey == 0 else "wall-wood-window-round"]]:
-			frame.add_child(ModelLib.piece(T + side[1] + ".glb", k, Vector3(0.0, y, 0.0), side[0]))
+			frame.add_child(_one_module_wall(T + side[1] + ".glb", k, Vector3(0.0, y, 0.0), side[0]))
+	Props._add_lit_interior(frame, SMALL_INTERIOR_HALF, 2.0 * k - 0.1)
 	var roof := ModelLib.piece(T + "roof-high-point.glb", k, Vector3(0.0, 2.0 * k, 0.0), 0.0)
 	ModelLib.set_atlas(roof, ModelLib.red_roof_atlas())
 	frame.add_child(roof)
-	# Sails on the front (+z) face. The pack model turns about its x axis,
-	# so it is turned to face +z; the pivot spins about its own z axis.
+	# Sails on the front (+z) face, on an axle out from the wall, well clear
+	# of the roof. The pack model turns about its x axis, so it is turned to
+	# face +z; the pivot spins about its own z axis.
+	var hub := Vector3(0.0, SAIL_HUB_HEIGHT, k / 2.0 + SAIL_OUT + 0.3)
+	var axle := Props._rod(Vector3(0.0, SAIL_HUB_HEIGHT, k / 2.0 + 0.02), hub, 0.07, WOOD)
+	axle.name = "Axle"
+	frame.add_child(axle)
 	var sails := Node3D.new()
 	sails.name = "Sails"
-	sails.position = Vector3(0.0, SAIL_HUB_HEIGHT, k / 2.0 + 0.32)
+	sails.position = hub
 	sails.set_meta("spin_axis", Vector3(0.0, 0.0, 1.0))
 	sails.add_to_group("windmill_sails")
 	var blades := ModelLib.instance(T + "windmill.glb")
@@ -301,8 +312,9 @@ static func hut(red_roof: bool, rot := 0.0) -> Node3D:
 	var model := _frame(root, rot)
 	var k := ModelLib.TOWN_SCALE
 	for side in [[0.0, "wall-wood-window-shutters"], [90.0, "wall-wood"], [180.0, "wall-wood-window-small"], [-90.0, "wall-wood-door"]]:
-		model.add_child(ModelLib.piece(T + side[1] + ".glb", k, Vector3.ZERO, side[0]))
-	var roof := ModelLib.piece(T + "roof-point.glb", k * 0.9, Vector3(0.0, k, 0.0), 0.0)
+		model.add_child(_one_module_wall(T + side[1] + ".glb", k, Vector3.ZERO, side[0]))
+	Props._add_lit_interior(model, SMALL_INTERIOR_HALF)
+	var roof := ModelLib.piece(T + "roof-point.glb", k, Vector3(0.0, k, 0.0), 0.0)
 	if red_roof:
 		ModelLib.set_atlas(roof, ModelLib.red_roof_atlas())
 	model.add_child(roof)
@@ -336,7 +348,7 @@ static func _counter_height(stall: Node3D, space: Node3D) -> float:
 ## chimney. Built from simple shapes.
 static func oven() -> Node3D:
 	var root := Props._root()
-	var model := root.get_node("Model") as Node3D
+	var model := _frame(root, 0.0)
 	var base := MeshInstance3D.new()
 	var box := BoxMesh.new()
 	box.size = Vector3(1.4, 0.6, 1.4)
@@ -458,70 +470,243 @@ static func telescope(rot := 0.0) -> Node3D:
 # ---------------------------------------------------------------- the far cliff
 
 ## The far cliff on Leafwind's north edge, where the wind used to come
-## from: a tall spire of Nature Kit rock, and on top a tangled knot of pale
-## wind, caught in itself and going nowhere. Decoration only.
+## from: a craggy, faceted spire in the island's own blue-grey stone (same
+## stone texture as the island's underside), with grassy ledges and two
+## smaller crags beside it. On top, the tangled knot of wind. Decoration only.
 static func wind_cliff(size: Vector2i) -> Node3D:
 	var root := Props._root()
 	var model := root.get_node("Model") as Node3D
-	var foot := Vector2(size) * Grid.TILE
-	var base := ModelLib.fitted(NK + "cliff_block_rock.glb", foot * Vector2(0.9, 0.85), 1.0, 0.0)
-	base.scale.y = 3.0 / ModelUtil.aabb_in(base, model).size.y
-	model.add_child(base)
-	var spire := ModelLib.fitted(NK + "rock_tallB.glb", Vector2(foot.x * 0.5, foot.y * 0.7), 1.0, 7.0, 25.0)
-	spire.position = Vector3(-0.6, 2.9, 0.0)
-	model.add_child(spire)
-	var side := ModelLib.fitted(NK + "rock_tallG.glb", Vector2(2.2, 2.2), 1.0, 4.5, -40.0)
-	side.position = Vector3(2.9, 2.9, 0.4)
-	model.add_child(side)
-	var low := ModelLib.fitted(NK + "rock_tallE.glb", Vector2(2.4, 2.4), 1.0, 2.6, 70.0)
-	low.position = Vector3(-3.4, 2.9, 0.5)
-	model.add_child(low)
-	var top := ModelUtil.aabb_in(model, model).end.y
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 7041
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	# [centre, base radii (x, z), profile: [height, radius share, grass ledge on top?]]
+	var main_top := 9.4
+	var spires := [
+		[Vector3(-0.7, 0.0, -0.1), Vector2(2.75, 2.3), [[0.0, 1.0, false], [1.4, 0.97, false], [2.9, 0.88, true], [2.9, 0.72, false],
+				[4.6, 0.64, false], [6.1, 0.56, true], [6.1, 0.45, false], [7.9, 0.37, false], [main_top, 0.3, false]]],
+		[Vector3(3.15, 0.0, 0.55), Vector2(1.35, 1.25), [[0.0, 1.0, false], [1.8, 0.9, false], [3.2, 0.78, true], [3.2, 0.6, false], [4.7, 0.48, false]]],
+		[Vector3(-3.95, 0.0, 1.35), Vector2(0.8, 0.8), [[0.0, 1.0, false], [1.4, 0.82, false], [2.6, 0.62, false]]],
+	]
+	var main_cap := Vector3.ZERO
+	var ledges: Array[Vector3] = []
+	for s in spires:
+		var cap := _add_spire(st, rng, s[0], s[1], s[2], ledges)
+		if main_cap == Vector3.ZERO:
+			main_cap = cap
+	var mi := MeshInstance3D.new()
+	mi.name = "Crag"
+	mi.mesh = st.commit()
+	var mat := ShaderMaterial.new()
+	mat.shader = preload("res://shaders/island_ground.gdshader")
+	mat.set_shader_parameter("detail_tex", ModelLib.stone_texture())
+	mi.material_override = mat
+	model.add_child(mi)
+	# Grass tufts and a flower or two on the ledges.
+	var tufts := [P + "grass.glb", NK + "flower_yellowA.glb", P + "grass.glb", NK + "flower_purpleA.glb", P + "grass.glb"]
+	for i in ledges.size():
+		var tuft := ModelLib.fitted(tufts[i % tufts.size()], Vector2(0.5, 0.5), 1.0, 0.45, 40.0 * i)
+		tuft.position = ledges[i]
+		model.add_child(tuft)
 	var knot := wind_knot()
-	knot.position = Vector3(-0.4, top + 1.4, 0.0)
+	knot.position = main_cap + Vector3(0.0, 1.9, 0.0)
 	model.add_child(knot)
 	Props._collider_from_model(root)
 	return root
 
 
-## The knot of wind: three looping strands tangled through each other,
-## pale and faintly bright, plus a few loose wisps.
+## One faceted rock column (low-poly, like the rest of the art): rings of
+## jittered points shrinking upwards, with flat grassy ledges where it steps
+## in and a grassy cap on top. Adds its triangles to `st`, adds a point on
+## each ledge to `ledges`, and returns the middle of its cap.
+static func _add_spire(st: SurfaceTool, rng: RandomNumberGenerator, centre: Vector3, radii: Vector2, profile: Array, ledges: Array[Vector3]) -> Vector3:
+	var sides := 9
+	var rock := Color(0.6, 0.6, 0.76)
+	var grass := Color(0.49, 0.72, 0.36)
+	var rings: Array[PackedVector3Array] = []
+	var lean := Vector3(rng.randf_range(-0.05, 0.05), 0.0, rng.randf_range(-0.04, 0.04))
+	for i in profile.size():
+		var y: float = profile[i][0]
+		var share: float = profile[i][1]
+		var ring := PackedVector3Array()
+		var twist := rng.randf_range(-0.12, 0.12)
+		for k in sides:
+			var a := TAU * k / sides + twist
+			var jitter := 1.0 + rng.randf_range(-0.12, 0.1)
+			if i == 0:
+				jitter = minf(jitter, 1.0)  # the base never pokes out past its radius
+			var p := Vector3(cos(a) * radii.x, 0.0, sin(a) * radii.y) * share * jitter
+			ring.append(centre + lean * y + p + Vector3(0.0, y, 0.0))
+		rings.append(ring)
+	for i in profile.size() - 1:
+		var flat: bool = is_equal_approx(profile[i][0], profile[i + 1][0])
+		var mid_ring := centre + lean * float(profile[i][0]) + Vector3(0.0, profile[i][0], 0.0)
+		for k in sides:
+			var k2 := (k + 1) % sides
+			var a: Vector3 = rings[i][k]
+			var b: Vector3 = rings[i][k2]
+			var c: Vector3 = rings[i + 1][k2]
+			var d: Vector3 = rings[i + 1][k]
+			var shade := rng.randf_range(0.0, 0.16) + (0.1 if i == 0 else 0.0)
+			var col := grass.darkened(rng.randf_range(0.0, 0.08)) if flat else rock.darkened(shade)
+			_flat_tri(st, a, b, c, col, mid_ring)
+			_flat_tri(st, a, c, d, col, mid_ring)
+		if flat and profile[i][2]:
+			var k := rng.randi_range(0, sides - 1)
+			ledges.append((rings[i][k] + rings[i + 1][k]) / 2.0)
+	# Grassy cap: a low dome over the top ring.
+	var top := rings[rings.size() - 1]
+	var cap := Vector3.ZERO
+	for p in top:
+		cap += p
+	cap /= top.size()
+	var peak := cap + Vector3(0.0, 0.25, 0.0)
+	for k in sides:
+		_flat_tri(st, top[k], top[(k + 1) % sides], peak, grass.darkened(rng.randf_range(0.0, 0.1)), cap - Vector3(0.0, 1.0, 0.0))
+	return peak
+
+
+## A flat-shaded triangle whose normal points away from `inside`.
+static func _flat_tri(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, col: Color, inside: Vector3) -> void:
+	var n := (b - a).cross(c - a).normalized()
+	if n.dot((a + b + c) / 3.0 - inside) < 0.0:
+		n = -n
+	for v in [a, b, c]:
+		st.set_color(col)
+		st.set_normal(n)
+		st.add_vertex(v)
+
+
+## The knot of wind: soft ribbons of air looped round and through each
+## other into a tangled ball, with wisps spiralling in from outside and a
+## few leaves caught inside. Every strand churns slowly about its own axis
+## (scripts/wind_knot.gd), and bands of air flow along the ribbons
+## (shaders/wind_ribbon.gdshader): wind, tied up and going nowhere.
+const KNOT_RADIUS := 1.45
+
+
 static func wind_knot() -> Node3D:
 	var knot := Node3D.new()
 	knot.name = "WindKnot"
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.9, 0.96, 1.0, 0.82)
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.emission_enabled = true
-	mat.emission = Color(0.75, 0.88, 1.0)
-	mat.emission_energy_multiplier = 0.45
-	mat.roughness = 0.6
-	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-	var strands := [[2, 3, 1.3, Vector3(0, 0, 0)], [3, 2, 1.05, Vector3(40, 30, 0)], [2, 5, 0.9, Vector3(-30, 70, 20)]]
-	for s in strands:
+	knot.set_script(preload("res://scripts/wind_knot.gd"))
+	var mat := ShaderMaterial.new()
+	mat.shader = preload("res://shaders/wind_ribbon.gdshader")
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 2207
+	var r := KNOT_RADIUS
+	# Closed loops: torus knots and wobbly rings, each tilted differently.
+	var loops := [[2, 3, 0.95], [3, 2, 0.8], [2, 5, 0.72], [1, 0, 1.0], [1, 0, 0.88], [3, 4, 0.6]]
+	for i in loops.size():
+		var p: int = loops[i][0]
+		var q: int = loops[i][1]
+		var size: float = loops[i][2]
 		var pts := PackedVector3Array()
-		var p: int = s[0]
-		var q: int = s[1]
-		var scale: float = s[2]
-		for i in 161:
-			var t := TAU * i / 160.0
-			var r := 2.0 + cos(q * t)
-			pts.append(Vector3(r * cos(p * t), sin(q * t), r * sin(p * t)) * scale * 0.42)
-		var strand := _tube(pts, 0.09, Color.WHITE, mat)
-		strand.rotation_degrees = s[3]
+		for j in 121:
+			var t := TAU * j / 120.0
+			var v: Vector3
+			if q == 0:
+				v = Vector3(cos(t), 0.18 * sin(3.0 * t + i), sin(t))  # a wobbly ring
+			else:
+				var rr := 2.0 + cos(q * t)
+				v = Vector3(rr * cos(p * t), sin(q * t), rr * sin(p * t)) / 3.0
+			pts.append(v * r * size)
+		var strand := _ribbon(pts, 0.32 - 0.03 * i, false, mat)
+		strand.name = "Strand%d" % i
+		strand.rotation = Vector3(rng.randf_range(-PI, PI), rng.randf_range(-PI, PI), rng.randf_range(-PI, PI))
+		strand.set_meta("spin_axis", Vector3(rng.randf_range(-1, 1), 1.0, rng.randf_range(-1, 1)).normalized())
+		strand.set_meta("spin", rng.randf_range(5.0, 11.0) * (1.0 if i % 2 == 0 else -1.0))
 		knot.add_child(strand)
-	# Loose wisps curling off the knot.
-	for w in [[Vector3(1.5, 0.3, 0.2), 0.0], [Vector3(-1.4, -0.4, -0.3), 150.0], [Vector3(0.3, 1.2, -0.6), 260.0]]:
+	# Wisps spiralling in from outside, caught by the knot.
+	for i in 4:
 		var pts := PackedVector3Array()
-		for i in 25:
-			var t := i / 24.0
-			var a: float = deg_to_rad(w[1]) + t * 4.0
-			pts.append((w[0] as Vector3) + Vector3(cos(a), t * 0.3, sin(a)) * (0.5 - 0.35 * t))
-		knot.add_child(_tube(pts, 0.04, Color.WHITE, mat))
+		var start := rng.randf_range(0.0, TAU)
+		var tilt := rng.randf_range(-0.5, 0.5)
+		for j in 41:
+			var t := j / 40.0
+			var a := start + t * 5.0
+			var rad := r * lerpf(1.0, 0.35, t)
+			pts.append(Vector3(cos(a) * rad, tilt * rad + (t - 0.5) * 0.4, sin(a) * rad))
+		var wisp := _ribbon(pts, 0.2, true, mat)
+		wisp.name = "Wisp%d" % i
+		wisp.set_meta("spin_axis", Vector3.UP)
+		wisp.set_meta("spin", rng.randf_range(8.0, 14.0))
+		knot.add_child(wisp)
+	# Leaves caught in the tangle.
+	var leaves := Node3D.new()
+	leaves.name = "CaughtLeaves"
+	leaves.set_meta("spin_axis", Vector3(0.3, 1.0, -0.2).normalized())
+	leaves.set_meta("spin", -6.0)
+	var leaf_mat := MeshUtil.color_material(GREEN)
+	leaf_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	for i in 7:
+		var leaf := MeshInstance3D.new()
+		var quad := PrismMesh.new()
+		quad.size = Vector3(0.16, 0.24, 0.01)
+		leaf.mesh = quad
+		leaf.material_override = leaf_mat
+		var dir := Vector3(rng.randf_range(-1, 1), rng.randf_range(-0.6, 0.6), rng.randf_range(-1, 1)).normalized()
+		leaf.position = dir * r * rng.randf_range(0.4, 0.85)
+		leaf.rotation = Vector3(rng.randf_range(-PI, PI), rng.randf_range(-PI, PI), rng.randf_range(-PI, PI))
+		leaves.add_child(leaf)
+	knot.add_child(leaves)
+	# A faint cool glow in the middle.
+	var glow := OmniLight3D.new()
+	glow.name = "Glow"
+	glow.light_color = Color(0.75, 0.88, 1.0)
+	glow.light_energy = 0.6
+	glow.omni_range = 4.0
+	knot.add_child(glow)
 	return knot
 
 
+## A flat ribbon along a line of points, turned to face outwards from the
+## knot's middle. UV.x = distance along (m), UV.y = across (0..1); vertex
+## alpha fades the ends of open ribbons.
+static func _ribbon(pts: PackedVector3Array, width: float, open: bool, mat: Material) -> MeshInstance3D:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var lefts := PackedVector3Array()
+	var rights := PackedVector3Array()
+	var dist := PackedFloat32Array()
+	var along := 0.0
+	for i in pts.size():
+		var prev := pts[maxi(i - 1, 0)]
+		var next := pts[mini(i + 1, pts.size() - 1)]
+		var tangent := (next - prev).normalized()
+		var out := pts[i].normalized() if pts[i].length() > 0.01 else Vector3.UP
+		var side := tangent.cross(out).normalized()
+		var t := float(i) / float(pts.size() - 1)
+		var w := width * (sin(PI * t) if open else 1.0)
+		lefts.append(pts[i] - side * w / 2.0)
+		rights.append(pts[i] + side * w / 2.0)
+		if i > 0:
+			along += pts[i].distance_to(pts[i - 1])
+		dist.append(along)
+	for i in pts.size() - 1:
+		var t0 := float(i) / float(pts.size() - 1)
+		var t1 := float(i + 1) / float(pts.size() - 1)
+		var a0 := sin(PI * t0) if open else 1.0
+		var a1 := sin(PI * t1) if open else 1.0
+		var quad := [[lefts[i], dist[i], 0.0, a0], [rights[i], dist[i], 1.0, a0], [rights[i + 1], dist[i + 1], 1.0, a1],
+				[lefts[i], dist[i], 0.0, a0], [rights[i + 1], dist[i + 1], 1.0, a1], [lefts[i + 1], dist[i + 1], 0.0, a1]]
+		for v in quad:
+			st.set_color(Color(1, 1, 1, v[3]))
+			st.set_uv(Vector2(v[1], v[2]))
+			st.set_normal(Vector3.UP)
+			st.add_vertex(v[0])
+	var mi := MeshInstance3D.new()
+	mi.mesh = st.commit()
+	mi.material_override = mat
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return mi
+
+
 # ---------------------------------------------------------------- helpers
+
+## A wall of a one-module building: every corner is an outer corner.
+static func _one_module_wall(path: String, k: float, centre: Vector3, rot: float) -> Node3D:
+	return Props.wall_piece(path, k, centre, rot, Vector2i.ZERO, func(m: Vector2i) -> bool: return m == Vector2i.ZERO)
+
 
 ## A child of root's Model, turned by `rot` degrees.
 static func _frame(root: Node3D, rot: float) -> Node3D:

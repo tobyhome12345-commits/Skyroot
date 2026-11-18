@@ -1,0 +1,32 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/interior.gd" id="1_interior"]
+[ext_resource type="Script" path="res://scripts/follow_camera.gd" id="2_camera"]
+[ext_resource type="PackedScene" path="res://scenes/player.tscn" id="3_player"]
+[ext_resource type="Shader" path="res://shaders/tilt_shift.gdshader" id="4_tilt"]
+
+[sub_resource type="ShaderMaterial" id="Mat_tilt"]
+shader = ExtResource("4_tilt")
+
+[node name="Interior" type="Node3D"]
+script = ExtResource("1_interior")
+room = "captain_cabin"
+player_path = NodePath("Player")
+
+[node name="Player" parent="." instance=ExtResource("3_player")]
+
+[node name="Camera" type="Camera3D" parent="."]
+script = ExtResource("2_camera")
+target_path = NodePath("../Player")
+distance = 14.0
+
+[node name="TiltShift" type="CanvasLayer" parent="."]
+
+[node name="Blur" type="ColorRect" parent="TiltShift"]
+material = SubResource("Mat_tilt")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2

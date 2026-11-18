@@ -491,6 +491,8 @@ func _prop_layout() -> Array[Dictionary]:
 		{"type": "nature", "model": N + "rock_largeB.glb", "cell": Vector2i(17, 0), "fill": 0.8, "rot": -30.0, "solid": true},
 		{"type": "nature", "model": N + "grass_large.glb", "cell": Vector2i(10, 2), "fill": 0.6, "rot": 0.0, "solid": false, "max_height": 0.7},
 		{"type": "nature", "model": N + "plant_bushSmall.glb", "cell": Vector2i(18, 2), "fill": 0.6, "rot": 40.0, "solid": true},
+		# A weathered sign says what the cliff is (Press E to read it).
+		{"type": "nature", "model": ModelLib.SURVIVAL + "signpost.glb", "cell": Vector2i(15, 3), "fill": 0.6, "rot": 200.0, "solid": true},
 		# ---- Windward Lookout: a quiet corner facing the cliff.
 		{"type": "bench", "cell": Vector2i(15, 6), "rot": 90.0},
 		{"type": "bench", "cell": Vector2i(11, 6), "rot": 90.0},
@@ -536,7 +538,7 @@ func _prop_layout() -> Array[Dictionary]:
 		{"type": "windmill", "cell": Vector2i(24, 1), "size": Vector2i(2, 2), "rot": 0.0},
 		{"type": "rope_coils", "cell": Vector2i(22, 2), "rot": 15.0},
 		{"type": "rope_coils", "cell": Vector2i(22, 6), "rot": -30.0},
-		{"type": "hut", "cell": Vector2i(26, 4), "red_roof": true, "rot": -90.0},
+		{"type": "hut", "cell": Vector2i(26, 4), "size": Vector2i(1, 1), "red_roof": true, "interior": "res://scenes/interiors/rope_loft.tscn"},
 		{"type": "tree", "cell": Vector2i(26, 1), "kind": "pine"},
 		{"type": "nature", "model": N + "tree_oak.glb", "cell": Vector2i(22, 0), "fill": 0.9, "rot": 120.0, "solid": true, "max_height": 4.2},
 		{"type": "lantern", "cell": Vector2i(25, 6)},
@@ -545,7 +547,7 @@ func _prop_layout() -> Array[Dictionary]:
 		{"type": "grass", "cell": Vector2i(27, 1), "rot": 80.0},
 		# ---- North band (between the pads and the plaza).
 		{"type": "nature", "model": N + "tree_fat.glb", "cell": Vector2i(8, 10), "fill": 0.9, "rot": 60.0, "solid": true, "max_height": 4.4},
-		{"type": "hut", "cell": Vector2i(10, 11), "rot": 0.0},
+		{"type": "hut", "cell": Vector2i(10, 11), "size": Vector2i(1, 1), "interior": "res://scenes/interiors/captain_cabin.tscn"},
 		{"type": "tree", "cell": Vector2i(15, 10), "kind": "bushy"},
 		{"type": "tree", "cell": Vector2i(19, 10), "kind": "round"},
 		{"type": "nature", "model": N + "tree_detailed.glb", "cell": Vector2i(26, 11), "fill": 0.9, "rot": 200.0, "solid": true, "max_height": 4.6},
@@ -578,7 +580,7 @@ func _prop_layout() -> Array[Dictionary]:
 		# the chime-maker's corner, huts and gardens.
 		{"type": "windmill", "cell": Vector2i(2, 20), "size": Vector2i(2, 2), "rot": 0.0},
 		{"type": "kite_pole", "cell": Vector2i(6, 20), "color": "white", "rot": 90.0},
-		{"type": "hut", "cell": Vector2i(6, 23), "rot": 0.0},
+		{"type": "hut", "cell": Vector2i(6, 23), "size": Vector2i(1, 1), "interior": "res://scenes/interiors/bakehouse.tscn"},
 		{"type": "bunting", "cell": Vector2i(8, 23), "size": Vector2i(2, 1)},
 		{"type": "oven", "cell": Vector2i(10, 21)},
 		{"type": "bake_stall", "cell": Vector2i(11, 21), "rot": 0.0},
@@ -591,7 +593,7 @@ func _prop_layout() -> Array[Dictionary]:
 		{"type": "wind_chime", "cell": Vector2i(20, 24), "rot": 0.0},
 		{"type": "wind_chime", "cell": Vector2i(22, 24), "rot": 120.0},
 		{"type": "wind_chime", "cell": Vector2i(21, 26), "rot": 240.0},
-		{"type": "hut", "cell": Vector2i(23, 23), "red_roof": true, "rot": -90.0},
+		{"type": "hut", "cell": Vector2i(23, 23), "size": Vector2i(1, 1), "red_roof": true, "interior": "res://scenes/interiors/chime_workshop.tscn"},
 		{"type": "tree", "cell": Vector2i(25, 20), "kind": "pine"},
 		{"type": "tree", "cell": Vector2i(1, 24), "kind": "round"},
 		{"type": "nature", "model": N + "tree_oak.glb", "cell": Vector2i(4, 26), "fill": 0.9, "rot": 0.0, "solid": true, "max_height": 4.2},
@@ -613,6 +615,11 @@ func _prop_layout() -> Array[Dictionary]:
 		{"type": "nature", "model": N + "flower_redB.glb", "cell": Vector2i(19, 23), "fill": 0.45, "rot": 0.0, "solid": false, "max_height": 0.7},
 		{"type": "nature", "model": N + "grass_leafsLarge.glb", "cell": Vector2i(5, 21), "fill": 0.6, "rot": 0.0, "solid": false, "max_height": 0.7},
 	]
+
+
+## The sign by the far cliff: stand beside it and press E to read it.
+func _after_build() -> void:
+	_add_talk_spot(Vector2i(14, 3), Vector2i(15, 3), "gust_point", 1.6)
 
 
 ## Villagers: id (data/dialogue/<id>.json), tile, facing (degrees, 0 =

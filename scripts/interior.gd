@@ -552,7 +552,11 @@ func _build_log_walls(walls: Node3D, sides: Dictionary, windows: Array) -> void:
 func _treehouse_floor() -> Material:
 	if not has_meta("floor_mat"):
 		var m := (Treehouse.floor_material("deck").duplicate() as ShaderMaterial)
-		m.set_shader_parameter("tint", Treehouse.WOOD)
+		m.set_shader_parameter("tint", Treehouse.DECK)
+		m.set_shader_parameter("force_axis", 0)
+		m.set_shader_parameter("edge_moss", false)
+		m.set_shader_parameter("leaves", false)
+		m.set_shader_parameter("dapple", false)
 		set_meta("floor_mat", m)
 	return get_meta("floor_mat")
 

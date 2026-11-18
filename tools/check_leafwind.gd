@@ -59,6 +59,7 @@ func _run() -> void:
 	_check_guards()
 	_check_reachable()
 	_check_windmills_and_cliff()
+	_check_frame()
 	await _walk_tests()
 	print("leafwind    %s" % ("ok" if _failures == 0 else "%d problem(s)" % _failures))
 	for path: String in INTERIORS:
@@ -251,6 +252,34 @@ func _check_windmills_and_cliff() -> void:
 		var size: Vector2i = cliff.get_meta("size")
 		_expect(cell.y == 0 and not _island.is_ground(cell + Vector2i(size.x / 2, -1)), "the far cliff is on the island's north edge")
 		_expect(cliff.get_meta("solid", false), "the far cliff can't be walked onto")
+
+
+## The canopy framing on the camera only covers the top band of the view
+## and its outer sides: every point of it, projected to the screen, is
+## above FRAME_TOP or beyond FRAME_SIDE (never over the player or the
+## middle of the island).
+func _check_frame() -> void:
+	var cam := current_scene.get_node("Camera") as Camera3D
+	var frame := cam.get_node_or_null("CanopyFrame") as Node3D
+	_expect(frame != null, "the canopy frame is on the camera")
+	if frame == null:
+		return
+	var t := tan(deg_to_rad(cam.fov / 2.0))
+	var bad := 0
+	var total := 0
+	for mi in frame.find_children("*", "MeshInstance3D", true, false):
+		var xf := frame.transform * (mi as Node3D).transform
+		for v in (mi as MeshInstance3D).mesh.get_faces():
+			var p := xf * v
+			total += 1
+			if p.z > -0.1:
+				bad += 1
+				continue
+			var sy := p.y / (-p.z * t)
+			var sx := p.x / (-p.z * t * 16.0 / 9.0)
+			if sy < _island.FRAME_TOP - 0.001 and absf(sx) < _island.FRAME_SIDE - 0.001:
+				bad += 1
+	_expect(total > 0 and bad == 0, "the canopy frame stays in the top band and outer sides of the view (%d of %d points stray)" % [bad, total])
 
 
 # ---------------------------------------------------------------- physics walks

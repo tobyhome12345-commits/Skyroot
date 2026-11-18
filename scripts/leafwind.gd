@@ -6,7 +6,7 @@ extends "res://scripts/island.gd"
 ## bridges across the sky gaps between the island's pads.
 ##
 ## Map: '#' plank deck, '=' walkway, '.' sky (level 0 unless said); the
-##      plaza is woven leaf, the lookout branch is bark, a few tiles moss
+##      plaza is round boards round a stump table, a few tiles moss
 ##      (see _floor_kind)
 ##      '^' wooden deck (level 1)    '%' big leaf deck (level 1)
 ##      'n' 's' 'e' 'w' stairs, rising towards north / south / east / west;
@@ -30,7 +30,7 @@ const LEAFWIND_MAP: Array[String] = [
 	"#^^^^^^ww=###=###=##%%%%%%##",
 	"#^^^^^^##=###=###=##%%%%%%##",
 	"#^^^^^^##=========##%%%%%%##",
-	"###n######========ee%%%%%%##",
+	"###n######===#====ee%%%%%%##",
 	"###n######=======###%%%%%%##",
 	"###===========##############",
 	"#############=##############",
@@ -216,7 +216,7 @@ func _build_decks(root: Node3D, wood: SurfaceTool) -> void:
 		_shape(Vector3(Grid.TILE, top, Grid.TILE), c + Vector3(0.0, top / 2.0, 0.0), "deck", cell)
 		if _char(cell) != "^":
 			continue
-		_floor_quad("deck", cell, top)
+		_floor_quad("deck", cell, top, _open_dirs(cell, is_deck), _floor_axis(cell))
 		_deck_edges(root, wood, cell, top - 0.004, DECK_WOOD)
 
 
@@ -397,7 +397,7 @@ func _build_bridges(root: Node3D, wood: SurfaceTool) -> void:
 		for b in cells:
 			var bc := Grid.cell_center(b, map_size)
 			_shape(Vector3(Grid.TILE, BRIDGE_T, Grid.TILE), bc + Vector3(0.0, y - BRIDGE_T / 2.0, 0.0), "bridge", b)
-			_floor_quad("walk_x" if axis.x != 0 else "walk_z", b, y, 1.7, axis.x != 0)
+			_floor_quad("walk", b, y, [], 0 if axis.x != 0 else 1, 1.7, axis.x != 0)
 		var start := Grid.cell_center(cells[0], map_size) - run * h + Vector3(0.0, y, 0.0)
 		var end := Grid.cell_center(cells[-1], map_size) + run * h + Vector3(0.0, y, 0.0)
 		for sgn: float in [-1.0, 1.0]:
@@ -537,6 +537,8 @@ func _prop_layout() -> Array[Dictionary]:
 		{"type": "kite_pole", "cell": Vector2i(15, 13), "color": "green", "rot": 200.0},
 		{"type": "banner_pole", "cell": Vector2i(9, 17), "rot": 0.0},
 		{"type": "banner_pole", "cell": Vector2i(17, 17), "red": true, "rot": 180.0},
+		# The round plaza's stump table, with two stump stools.
+		{"type": "stump_table", "cell": Vector2i(13, 16)},
 		{"type": "paper_lantern", "cell": Vector2i(14, 14)},
 		{"type": "paper_lantern", "cell": Vector2i(12, 19)},
 		{"type": "planter", "cell": Vector2i(16, 18), "flower": "flower_redB"},
@@ -629,10 +631,11 @@ func _villager_layout() -> Array[Dictionary]:
 const GROUND_STYLE := "canopy"
 ## How deep the bark rim round each pad goes (m).
 const RIM_DEPTH := 0.6
-## The woven-leaf plaza in the middle of the village.
+## The round wooden plaza in the middle of the village, centred on its
+## stump table.
 const PLAZA := Rect2i(10, 15, 7, 3)
-## The windward lookout is the top of a great branch: bark underfoot.
-const BARK_TOP := Rect2i(10, 0, 9, 10)
+const PLAZA_CENTRE := Vector2i(13, 16)
+const PLAZA_RADIUS := 2.9
 ## A few soft patches of moss (flowers and mushrooms grow on them).
 const MOSS_CELLS: Array[Vector2i] = [Vector2i(3, 2), Vector2i(16, 8), Vector2i(17, 5), Vector2i(11, 4), Vector2i(4, 23),
 	Vector2i(5, 21), Vector2i(9, 20), Vector2i(1, 25), Vector2i(18, 25), Vector2i(19, 23), Vector2i(22, 19),
@@ -641,28 +644,35 @@ const MOSS_CELLS: Array[Vector2i] = [Vector2i(3, 2), Vector2i(16, 8), Vector2i(1
 var _floors := {}  # kind -> SurfaceTool
 
 
-## What a tile's floor is made of.
+## What a tile's floor is made of: warm plank decks, lighter walkways, the
+## round plaza, or moss.
 func _floor_kind(cell: Vector2i) -> String:
 	if cell in MOSS_CELLS:
 		return "moss"
+	if PLAZA.has_point(cell):
+		return "plaza"
 	if is_path(cell):
-		if PLAZA.has_point(cell):
-			return "weave"
-		var along_z := is_path(cell + Vector2i(0, 1)) or is_path(cell - Vector2i(0, 1))
-		var along_x := is_path(cell + Vector2i(1, 0)) or is_path(cell - Vector2i(1, 0))
-		return "walk_z" if along_z and not along_x else "walk_x"
-	if BARK_TOP.has_point(cell):
-		return "bark"
+		return "walk"
 	return "deck"
 
 
-const FLOOR_COLOURS := {"deck": Treehouse.WOOD, "walk_x": Treehouse.WOOD_LIGHT, "walk_z": Treehouse.WOOD_LIGHT,
-	"weave": Treehouse.LEAF_LIGHT, "moss": Treehouse.MOSS, "bark": Treehouse.BARK}
+## Which way a tile's boards run (0 = along x, 1 = along z): walkways run
+## along the path; decks change direction in 3 x 3 blocks, like parquet.
+func _floor_axis(cell: Vector2i) -> int:
+	if is_path(cell):
+		var along_z := is_path(cell + Vector2i(0, 1)) or is_path(cell - Vector2i(0, 1))
+		var along_x := is_path(cell + Vector2i(1, 0)) or is_path(cell - Vector2i(1, 0))
+		return 1 if along_z and not along_x else 0
+	return (cell.x / 3 + cell.y / 3) % 2
 
 
-## One flat floor quad over a tile at height y. Rope bridges are narrower:
-## `width` across, running along x (`run_x`) or z.
-func _floor_quad(kind: String, cell: Vector2i, y: float, width := Grid.TILE, run_x := true) -> void:
+const FLOOR_COLOURS := {"deck": Treehouse.DECK, "walk": Treehouse.WALKWAY, "plaza": Treehouse.PLAZA_WOOD, "moss": Treehouse.MOSS}
+
+
+## One flat floor over a tile at height y, as 2 x 2 small quads so moss can
+## creep in from the `open` edges (directions with no floor beyond them).
+## Rope bridges are narrower: `width` across, running along x (`run_x`) or z.
+func _floor_quad(kind: String, cell: Vector2i, y: float, open: Array = [], axis := 0, width := Grid.TILE, run_x := true) -> void:
 	if not _floors.has(kind):
 		var new_st := SurfaceTool.new()
 		new_st.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -671,23 +681,47 @@ func _floor_quad(kind: String, cell: Vector2i, y: float, width := Grid.TILE, run
 	var c := Grid.cell_center(cell, map_size)
 	var hx := (Grid.TILE if run_x else width) / 2.0
 	var hz := (width if run_x else Grid.TILE) / 2.0
-	var q := [Vector3(c.x - hx, y, c.z - hz), Vector3(c.x + hx, y, c.z - hz), Vector3(c.x + hx, y, c.z + hz), Vector3(c.x - hx, y, c.z + hz)]
 	var colour: Color = FLOOR_COLOURS[kind]
-	colour = colour.darkened(_cell_noise(cell, 61) * 0.06)
-	for k in [0, 2, 1, 0, 3, 2]:
-		st.set_color(colour)
-		st.set_normal(Vector3.UP)
-		st.add_vertex(q[k])
+	colour = colour.darkened(_cell_noise(cell, 61) * 0.05)
+	var pts := {}
+	for j in 3:
+		for i in 3:
+			var moss := 0.0
+			if (i == 0 and Vector2i(-1, 0) in open) or (i == 2 and Vector2i(1, 0) in open) 					or (j == 0 and Vector2i(0, -1) in open) or (j == 2 and Vector2i(0, 1) in open):
+				moss = 1.0
+			pts[Vector2i(i, j)] = [Vector3(c.x - hx + hx * i, y, c.z - hz + hz * j), moss]
+	for j in 2:
+		for i in 2:
+			var q := [pts[Vector2i(i, j)], pts[Vector2i(i + 1, j)], pts[Vector2i(i + 1, j + 1)], pts[Vector2i(i, j + 1)]]
+			for k in [0, 2, 1, 0, 3, 2]:
+				st.set_color(Color(colour, q[k][1]))
+				st.set_uv(Vector2(float(axis), 0.0))
+				st.set_normal(Vector3.UP)
+				st.add_vertex(q[k][0])
+
+
+## The directions round a tile with no floor of the same level beyond.
+func _open_dirs(cell: Vector2i, has_floor: Callable) -> Array:
+	var open := []
+	for d in DIRS:
+		if not has_floor.call(cell + d):
+			open.append(d)
+	return open
 
 
 func _commit_floors(parent: Node3D) -> void:
 	for kind: String in _floors:
-		parent.add_child(Treehouse.mesh(_floors[kind], Treehouse.floor_material(kind), "floor_" + kind))
+		var mat := Treehouse.floor_material(kind)
+		if kind == "plaza":
+			var centre := Grid.cell_center(PLAZA_CENTRE, map_size)
+			mat.set_shader_parameter("plaza_centre", Vector2(centre.x, centre.z))
+			mat.set_shader_parameter("plaza_radius", PLAZA_RADIUS)
+		parent.add_child(Treehouse.mesh(_floors[kind], mat, "floor_" + kind))
 	_floors.clear()
 
 
-## Leafwind's ground: plank decks, walkways, a woven-leaf plaza, bark and
-## moss on top; a bark rim round every pad's edge; under each pad, great
+## Leafwind's ground: warm plank decks, lighter walkways, a round wooden
+## plaza and moss patches on top; a bark rim round every pad's edge; under each pad, great
 ## bark-covered branches holding it up, with roots and vines hanging into
 ## the sky. Floor collision is one box per tile, as on every island.
 func _build_ground() -> void:
@@ -699,7 +733,7 @@ func _build_ground() -> void:
 	var h := Grid.TILE / 2.0
 	var rim_edges := 0
 	for cell in land_cells():
-		_floor_quad(_floor_kind(cell), cell, 0.0)
+		_floor_quad(_floor_kind(cell), cell, 0.0, _open_dirs(cell, is_land), _floor_axis(cell))
 		var c := Grid.cell_center(cell, map_size)
 		for d in DIRS:
 			if is_land(cell + d):
@@ -857,8 +891,10 @@ func _add_vine(st: SurfaceTool, top: Vector3, length: float, out: Vector3, rng: 
 
 # ---------------------------------------------------------------- atmosphere
 
-## Pale haze drifting in the gaps between the pads and under the rims, and
-## soft rays of light slanting down through the canopy.
+## Faint warm mist drifting low in the gaps between the pads (never over the
+## decks), and soft golden rays of light slanting down through the canopy.
+## The distance haze itself is the environment's depth fog (scene file): it
+## starts beyond the island, so only far things fade.
 func _add_atmosphere() -> void:
 	var air := Node3D.new()
 	air.name = "Atmosphere"
@@ -873,15 +909,17 @@ func _add_atmosphere() -> void:
 			var mist := MeshInstance3D.new()
 			mist.name = "Mist%d" % n
 			var quad := QuadMesh.new()
-			quad.size = Vector2(6.0 + _cell_noise(cell, 52) * 4.0, 3.0 + _cell_noise(cell, 53) * 1.5)
+			quad.size = Vector2(4.0 + _cell_noise(cell, 52) * 2.5, 2.0 + _cell_noise(cell, 53) * 1.0)
 			mist.mesh = quad
 			var mat := ShaderMaterial.new()
 			mat.shader = mist_shader
 			mat.set_shader_parameter("seed", float(n) * 3.7)
-			mat.set_shader_parameter("opacity", 0.22 + _cell_noise(cell, 54) * 0.18)
+			mat.set_shader_parameter("opacity", 0.12 + _cell_noise(cell, 54) * 0.1)
+			mat.set_shader_parameter("colour", Color(0.98, 0.93, 0.85))
 			mist.material_override = mat
 			mist.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-			mist.position = Grid.cell_center(cell, map_size) + Vector3(0.0, -2.2 + _cell_noise(cell, 55) * 2.8, 0.0)
+			# Well below the decks, so it only shows in the gaps between pads.
+			mist.position = Grid.cell_center(cell, map_size) + Vector3(0.0, -5.0 + _cell_noise(cell, 55) * 2.0, 0.0)
 			air.add_child(mist)
 			n += 1
 	# Light shafts, slanting the same way as the sun.
@@ -904,7 +942,8 @@ func _add_atmosphere() -> void:
 		shaft.mesh = quad
 		var mat := ShaderMaterial.new()
 		mat.shader = shaft_shader
-		mat.set_shader_parameter("strength", 0.09 + 0.03 * (i % 2))
+		mat.set_shader_parameter("strength", 0.07 + 0.03 * (i % 2))
+		mat.set_shader_parameter("colour", Color(1.0, 0.9, 0.68))
 		shaft.material_override = mat
 		shaft.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		shaft.transform = Transform3D(Basis(x, y, zz), foot + y * (length / 2.0))
@@ -921,10 +960,16 @@ func _near_land(cell: Vector2i, reach: int) -> bool:
 
 # ---------------------------------------------------------------- framing
 
-## Great overhead branches with leaf clusters across the top corners of the
-## view, and vines hanging down at the sides, so the village sits inside a
-## giant canopy. Attached to the game camera and sized by the view (screen
-## fraction), so it frames the same way at any resolution.
+## Great overhead branches with leaf clusters peeking in along the very top
+## of the view, and vines hanging down the outer sides, so the village sits
+## inside a giant canopy. Attached to the game camera and sized by the view
+## (screen fractions), so it frames the same way at any resolution. It only
+## ever covers the top band (FRAME_TOP and up) and the side bands (beyond
+## FRAME_SIDE): never the player or the middle of the screen.
+const FRAME_TOP := 0.84
+const FRAME_SIDE := 0.92
+
+
 func _build_canopy_frame() -> void:
 	var cam := get_parent().get_node_or_null("Camera") as Camera3D
 	if cam == null:
@@ -941,33 +986,60 @@ func _build_canopy_frame() -> void:
 	bark.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var leaves := SurfaceTool.new()
 	leaves.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var tones := [Treehouse.LEAF.darkened(0.12), Treehouse.LEAF_DARK.darkened(0.1), Treehouse.LEAF, Treehouse.LEAF_LIGHT.darkened(0.08)]
-	# [start, end, start radius] in view units (hw, hh), at depth d.
-	var limbs := [[Vector2(-1.35, 0.92), Vector2(-0.2, 1.22), 0.5], [Vector2(1.35, 0.88), Vector2(0.28, 1.25), 0.45],
-			[Vector2(-1.25, 1.25), Vector2(-0.55, 0.98), 0.25]]
+	var tones := [Treehouse.LEAF, Treehouse.LEAF_DARK, Treehouse.LEAF_LIGHT, Treehouse.LEAF.darkened(0.1)]
+	# Limbs just above the top edge: [start, end] in view units (hw, hh).
+	var limbs := [[Vector2(-1.35, 1.1), Vector2(-0.3, 1.13)], [Vector2(1.35, 1.08), Vector2(0.35, 1.12)]]
 	for limb in limbs:
-		var a := Vector3((limb[0] as Vector2).x * hw, (limb[0] as Vector2).y * hh, -d - 0.8)
-		var b := Vector3((limb[1] as Vector2).x * hw, (limb[1] as Vector2).y * hh, -d + 0.4)
-		Treehouse.add_branch(bark, a, b, limb[2], 0.1, Vector3(0.0, -hh * 0.12, 0.0), Treehouse.BARK_DARK, 8)
-		for k in 6:
-			var t := 0.2 + 0.13 * k
-			var p := a.lerp(b, t) + Vector3(0.0, -hh * 0.12 * sin(PI * t), 0.0)
-			var twig := p + Vector3(rng.randf_range(-0.6, 0.6), rng.randf_range(-0.9, -0.3), rng.randf_range(-0.3, 0.6))
-			Treehouse.add_branch(bark, p, twig, 0.09, 0.03, Vector3(0.0, 0.1, 0.0), Treehouse.BARK_DARK, 4)
-			var s := rng.randf_range(0.7, 1.15)
-			Treehouse.add_leaf_blob(leaves, twig, Vector3(1.0, 0.65, 0.8) * s, tones[k % tones.size()], rng)
-			Treehouse.add_leaf_blob(leaves, p + Vector3(0.0, 0.3, -0.2), Vector3(0.9, 0.6, 0.7) * s, tones[(k + 1) % tones.size()], rng)
-	# Clusters peeking down along the top edge.
-	for k in 5:
-		var x := lerpf(-0.6, 0.65, float(k) / 4.0) * hw + rng.randf_range(-0.4, 0.4)
-		Treehouse.add_leaf_blob(leaves, Vector3(x, hh * 1.12, -d - rng.randf_range(0.0, 1.0)), Vector3(1.1, 0.6, 0.8) * rng.randf_range(0.8, 1.2), tones[k % tones.size()], rng)
-	# Vines down the sides.
+		var a := Vector3((limb[0] as Vector2).x * hw, (limb[0] as Vector2).y * hh, -d)
+		var b := Vector3((limb[1] as Vector2).x * hw, (limb[1] as Vector2).y * hh, -d)
+		Treehouse.add_branch(bark, a, b, 0.32, 0.1, Vector3(0.0, hh * 0.03, 0.0), Treehouse.BARK_DARK, 8)
+		for k in 7:
+			var t := 0.08 + 0.13 * k
+			var p := a.lerp(b, t)
+			var s := rng.randf_range(0.75, 1.05)
+			var size := Vector3(0.95, 0.45, 0.25) * s
+			# Leaf clusters hang from the limb but stop above FRAME_TOP (allowing
+			# for their depth: further back, a point shows lower on screen).
+			var centre := Vector3(p.x + rng.randf_range(-0.3, 0.3), hh * FRAME_TOP * _depth_margin(d, size.z) + size.y * 1.12 + rng.randf_range(0.0, 0.2), p.z)
+			Treehouse.add_leaf_blob(leaves, centre, size, tones[k % tones.size()], rng)
+	# Fuller clusters tucked into the two top corners (side bands).
+	for sgn: float in [-1.0, 1.0]:
+		for k in 3:
+			var size := Vector3(0.7, 0.75, 0.25) * rng.randf_range(0.85, 1.1)
+			var centre := Vector3(sgn * (hw * FRAME_SIDE * _depth_margin(d, size.z) + size.x * 1.12 + 0.1 * k), hh * (0.95 - 0.12 * k), -d)
+			Treehouse.add_leaf_blob(leaves, centre, size, tones[(k + 1) % tones.size()], rng)
+	# Vines down the outer sides.
 	var vines := SurfaceTool.new()
 	vines.begin(Mesh.PRIMITIVE_TRIANGLES)
-	for v in [[-0.95, 0.75], [-0.86, 0.45], [-0.78, 0.25], [0.93, 0.6], [0.84, 0.3]]:
-		var top := Vector3(v[0] * hw, hh * 1.1, -d + 0.2)
-		_add_vine(vines, top, hh * (1.1 - v[1]) + 0.5, Vector3.ZERO, rng)
+	for v in [[-1.0, 0.5], [-1.0, 0.25], [1.0, 0.4], [1.0, 0.62]]:
+		var x: float = v[0] * (hw * FRAME_SIDE * _depth_margin(d, 0.12) + 0.04)
+		_frame_vine(vines, Vector3(x, hh * 1.05, -d), hh * (1.05 - v[1]), signf(v[0]), rng)
 	for part in [Treehouse.mesh(bark, Treehouse.bark_material(), "Branches"), Treehouse.mesh(leaves, Treehouse.flat_material(), "Leaves"),
 			Treehouse.mesh(vines, Treehouse.flat_material(), "Vines")]:
 		part.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		frame.add_child(part)
+
+
+## How much further out a framing piece must sit so its back (`depth` m
+## behind the frame plane at distance `d`) still projects outside the view's
+## middle.
+func _depth_margin(d: float, depth: float) -> float:
+	return (d + depth * 1.1) / d
+
+
+## A vine down the side of the view: a straight stem with leaves that only
+## reach outwards (towards the screen edge), never in over the island.
+func _frame_vine(st: SurfaceTool, top: Vector3, length: float, out_sign: float, rng: RandomNumberGenerator) -> void:
+	var bottom := top - Vector3(0.0, length, 0.0)
+	Treehouse.add_tube(st, PackedVector3Array([top, bottom]), PackedFloat32Array([0.035, 0.015]), Treehouse.LEAF_DARK.darkened(0.2), 5, false)
+	var count := int(length / 0.3)
+	for j in count:
+		var p := top.lerp(bottom, (float(j) + 0.5) / count)
+		var side := Vector3(out_sign, 0.0, rng.randf_range(-0.4, 0.4)).normalized()
+		var tip := p + side * 0.2 + Vector3(0.0, -0.06, 0.0)
+		var wing := Vector3(0.0, 0.0, 0.07) if absf(side.z) < 0.5 else Vector3(0.07, 0.0, 0.0)
+		var col := [Treehouse.LEAF, Treehouse.LEAF_DARK, Treehouse.LEAF_LIGHT][j % 3] as Color
+		for v in [p, tip + wing - side * 0.1, tip, p, tip, tip - wing - side * 0.1]:
+			st.set_color(col)
+			st.set_normal(Vector3.UP)
+			st.add_vertex(v)

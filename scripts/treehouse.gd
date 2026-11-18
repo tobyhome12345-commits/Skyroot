@@ -10,17 +10,21 @@ class_name Treehouse
 ## Bark, logs and branches use shaders/bark.gdshader; floors use
 ## shaders/leafwind_floor.gdshader.
 
-const WOOD := Color(0.69, 0.53, 0.38)
-const WOOD_LIGHT := Color(0.8, 0.67, 0.5)
-const WOOD_DARK := Color(0.47, 0.35, 0.26)
-const CREAM := Color(0.93, 0.89, 0.78)
-const BARK := Color(0.48, 0.39, 0.31)
-const BARK_DARK := Color(0.36, 0.29, 0.24)
-const LEAF := Color(0.56, 0.65, 0.45)
-const LEAF_DARK := Color(0.44, 0.54, 0.38)
-const LEAF_LIGHT := Color(0.69, 0.75, 0.54)
-const STRAW := Color(0.86, 0.8, 0.6)
-const MOSS := Color(0.52, 0.6, 0.42)
+const WOOD := Color(0.8, 0.6, 0.4)          # honey oak
+const WOOD_LIGHT := Color(0.9, 0.73, 0.5)
+const WOOD_DARK := Color(0.56, 0.4, 0.28)
+const CREAM := Color(0.96, 0.91, 0.78)
+const BARK := Color(0.55, 0.42, 0.31)
+const BARK_DARK := Color(0.42, 0.32, 0.25)
+const LEAF := Color(0.55, 0.72, 0.4)
+const LEAF_DARK := Color(0.42, 0.6, 0.34)
+const LEAF_LIGHT := Color(0.7, 0.8, 0.5)
+const STRAW := Color(0.93, 0.82, 0.55)
+const MOSS := Color(0.52, 0.66, 0.38)
+## Floor tints: decks, the lighter main walkways, the round plaza.
+const DECK := Color(0.86, 0.64, 0.41)
+const WALKWAY := Color(0.94, 0.77, 0.53)
+const PLAZA_WOOD := Color(0.9, 0.7, 0.46)
 const SKY := Color(0.74, 0.84, 0.9)
 const ROPE := Color(0.8, 0.72, 0.55)
 const GLOW := Color(1.0, 0.86, 0.6)
@@ -32,17 +36,15 @@ static var _materials := {}
 
 # ---------------------------------------------------------------- materials
 
-## Floor material: "deck" / "walk_x" / "walk_z" (planks), "weave" (woven
-## leaf), "moss", "bark".
+## Floor material: "deck" / "walk" (planks; board direction comes from each
+## quad's UV.x), "moss", "plaza" (round boards; give it a centre).
 static func floor_material(kind: String) -> ShaderMaterial:
 	var key := "floor_" + kind
 	if not _materials.has(key):
 		var m := ShaderMaterial.new()
 		m.shader = preload("res://shaders/leafwind_floor.gdshader")
-		var k := {"deck": 0, "walk_x": 0, "walk_z": 0, "weave": 1, "moss": 2, "bark": 3}[kind] as int
-		m.set_shader_parameter("kind", k)
-		m.set_shader_parameter("board_axis", 1 if kind == "walk_z" else 0)
-		m.set_shader_parameter("board_width", 0.5 if kind.begins_with("walk") else 0.4)
+		m.set_shader_parameter("kind", {"deck": 0, "walk": 0, "moss": 2, "plaza": 4}[kind] as int)
+		m.set_shader_parameter("board_width", 0.48 if kind == "walk" else 0.42)
 		_materials[key] = m
 	return _materials[key]
 

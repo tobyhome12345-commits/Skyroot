@@ -58,6 +58,8 @@ static func build(p: Dictionary) -> Node3D:
 			return paper_lantern(p.get("rot", 0.0))
 		"tub_tree":
 			return tub_tree(p.get("seed", 1))
+		"stump_table":
+			return stump_table()
 		"bake_stall":
 			return bake_stall(p.get("rot", 0.0))
 		"oven":
@@ -295,6 +297,57 @@ static func paper_lantern(rot := 0.0) -> Node3D:
 	globe.material_override = Treehouse.glow_material(Color(1.0, 0.92, 0.7))
 	globe.position = Vector3(0.5, 1.95 - 0.17, 0.0)
 	model.add_child(globe)
+	return _finish(root)
+
+
+## The round plaza's table: a broad old tree stump with a pale, ringed top
+## and flared roots, two little stump stools beside it, and a pie and a
+## croissant waiting for company.
+static func stump_table() -> Node3D:
+	var root := Props._root()
+	var model := _frame(root, 0.0)
+	var bark := SurfaceTool.new()
+	bark.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var top := 0.78
+	Treehouse.add_tube(bark, PackedVector3Array([Vector3.ZERO, Vector3(0.0, top, 0.0)]), PackedFloat32Array([0.6, 0.54]), Treehouse.BARK, 12)
+	for k in 4:
+		var a := TAU * (k + 0.5) / 4.0
+		var out := Vector3(cos(a), 0.0, sin(a))
+		Treehouse.add_branch(bark, out * 0.4 + Vector3(0.0, 0.3, 0.0), out * 0.82 + Vector3(0.0, 0.055, 0.0), 0.15, 0.05, Vector3(0.0, 0.05, 0.0), Treehouse.BARK, 4)
+	for x in [-0.76, 0.76]:
+		Treehouse.add_tube(bark, PackedVector3Array([Vector3(x, 0.0, 0.0), Vector3(x, 0.42, 0.0)]), PackedFloat32Array([0.19, 0.17]), Treehouse.BARK, 10)
+	model.add_child(Treehouse.mesh(bark, Treehouse.bark_material(), "Stump"))
+	# Pale cut tops with growth rings.
+	var wood := MeshUtil.color_material(Color(0.93, 0.8, 0.6))
+	var ring_mat := MeshUtil.color_material(Color(0.78, 0.6, 0.4))
+	for t in [[Vector3(0.0, top, 0.0), 0.53, [0.18, 0.32, 0.44]], [Vector3(-0.76, 0.42, 0.0), 0.16, [0.08]], [Vector3(0.76, 0.42, 0.0), 0.16, [0.08]]]:
+		var disc := MeshInstance3D.new()
+		var cyl := CylinderMesh.new()
+		cyl.top_radius = t[1]
+		cyl.bottom_radius = t[1]
+		cyl.height = 0.02
+		cyl.radial_segments = 20
+		disc.mesh = cyl
+		disc.material_override = wood
+		disc.position = (t[0] as Vector3) + Vector3(0.0, 0.016, 0.0)  # 6 mm clear of the stump's cap
+		model.add_child(disc)
+		for r: float in t[2]:
+			var ring := MeshInstance3D.new()
+			var torus := TorusMesh.new()
+			torus.inner_radius = r - 0.008
+			torus.outer_radius = r + 0.008
+			torus.rings = 24
+			ring.mesh = torus
+			ring.material_override = ring_mat
+			ring.scale = Vector3(1.0, 0.3, 1.0)
+			ring.position = (t[0] as Vector3) + Vector3(0.0, 0.027, 0.0)
+			model.add_child(ring)
+	var pie := ModelLib.fitted(FOOD + "pie.glb", Vector2(0.42, 0.42), 1.0, 0.0)
+	pie.position = Vector3(-0.12, top + 0.027, 0.08)
+	model.add_child(pie)
+	var croissant := ModelLib.fitted(FOOD + "croissant.glb", Vector2(0.22, 0.22), 1.0, 0.0, 40.0)
+	croissant.position = Vector3(0.24, top + 0.027, -0.16)
+	model.add_child(croissant)
 	return _finish(root)
 
 

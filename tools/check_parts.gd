@@ -19,6 +19,7 @@ const PROPS := [
 	{"type": "cabin", "cell": Vector2i.ZERO, "size": Vector2i(2, 2), "seed": 8, "straw": true},
 	{"type": "tub_tree", "cell": Vector2i.ZERO, "seed": 5},
 	{"type": "paper_lantern", "cell": Vector2i.ZERO},
+	{"type": "stump_table", "cell": Vector2i.ZERO},
 	{"type": "planter", "cell": Vector2i.ZERO},
 	{"type": "well", "cell": Vector2i.ZERO},
 	{"type": "notice_board", "cell": Vector2i.ZERO},

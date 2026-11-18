@@ -26,10 +26,11 @@ const KITE_COLOURS := {"yellow": YELLOW, "blue": BLUE, "white": WHITE, "green": 
 ## sails sit on their own "Sails" node, pivoting on the hub.
 const SAIL_HUB_HEIGHT := 4.3
 const SAIL_SCALE := 1.25
-const SAIL_OUT := 0.55
-## Lit room shell inside a one-module building (hut, windmill tower): it
-## stays inside the walls' window shutters, so it never pokes through.
-const SMALL_INTERIOR_HALF := 0.6
+const SAIL_OUT := 0.62
+## The windmill tower's log walls (centre line, m from the middle) and the
+## reach of its thatch, kept clear of the sails.
+const TOWER_HALF := 0.9
+const TOWER_EAVE := 1.18
 
 
 ## Builds a Leafwind prop, or returns null for a type this file doesn't know.
@@ -50,7 +51,13 @@ static func build(p: Dictionary) -> Node3D:
 		"planter":
 			return planter(p.get("flower", "flower_yellowA"), p.get("rot", 0.0))
 		"hut":
-			return hut(p.get("red_roof", false), p.get("rot", 0.0))
+			return hut(p.get("straw", false), p.get("rot", 0.0))
+		"cabin":
+			return cabin(p.get("seed", 1), p.get("straw", false))
+		"paper_lantern":
+			return paper_lantern(p.get("rot", 0.0))
+		"tub_tree":
+			return tub_tree(p.get("seed", 1))
 		"bake_stall":
 			return bake_stall(p.get("rot", 0.0))
 		"oven":
@@ -68,32 +75,24 @@ static func build(p: Dictionary) -> Node3D:
 
 # ---------------------------------------------------------------- windmill
 
-## A 2 x 2 tile windmill: a two-storey wooden tower (Fantasy Town Kit walls,
-## one module wide) with a pointed roof, and the pack's windmill sails on
-## its front, frozen still. The sails hang on their own pivot node
-## ("Sails", meta "spin_axis") so they can turn later.
+## A 2 x 2 tile windmill in Leafwind's treehouse style: a two-storey log
+## tower with round windows and an arched door, a leaf-thatch cap, and the
+## pack's windmill sails (Fantasy Town Kit) on an axle out front, frozen
+## still. The sails hang on their own pivot node ("Sails", meta
+## "spin_axis") so they can turn later.
 static func windmill(rot := 0.0) -> Node3D:
-	var root := Props._root()
+	var root := Treehouse.cabin(Vector2i(2, 2), 0.0, false, 31 + int(rot), Treehouse.LEAF_DARK, 2, TOWER_HALF, TOWER_EAVE)
 	var model := root.get_node("Model") as Node3D
-	var frame := Node3D.new()
-	frame.name = "Frame"
-	frame.rotation_degrees.y = rot
-	model.add_child(frame)
-	var k := ModelLib.TOWN_SCALE
-	for storey in 2:
-		var y := float(storey) * k
-		for side in [[0.0, "wall-wood"], [90.0, "wall-wood"], [180.0, "wall-wood-window-small"],
-				[-90.0, "wall-wood-door" if storey == 0 else "wall-wood-window-round"]]:
-			frame.add_child(_one_module_wall(T + side[1] + ".glb", k, Vector3(0.0, y, 0.0), side[0]))
-	Props._add_lit_interior(frame, SMALL_INTERIOR_HALF, 2.0 * k - 0.1)
-	var roof := ModelLib.piece(T + "roof-high-point.glb", k, Vector3(0.0, 2.0 * k, 0.0), 0.0)
-	ModelLib.set_atlas(roof, ModelLib.red_roof_atlas())
-	frame.add_child(roof)
-	# Sails on the front (+z) face, on an axle out from the wall, well clear
-	# of the roof. The pack model turns about its x axis, so it is turned to
-	# face +z; the pivot spins about its own z axis.
-	var hub := Vector3(0.0, SAIL_HUB_HEIGHT, k / 2.0 + SAIL_OUT + 0.3)
-	var axle := Props._rod(Vector3(0.0, SAIL_HUB_HEIGHT, k / 2.0 + 0.02), hub, 0.07, WOOD)
+	for child in model.get_children():
+		child.rotation_degrees.y = rot
+		child.position = child.position.rotated(Vector3.UP, deg_to_rad(rot))
+	var frame := _frame(root, rot)
+	# Sails on the front (+z) face, on an axle out from the logs, well clear
+	# of the thatch. The pack model turns about its x axis, so it is turned
+	# to face +z; the pivot spins about its own z axis.
+	var face := TOWER_HALF + Treehouse.LOG_R
+	var hub := Vector3(0.0, SAIL_HUB_HEIGHT, face + SAIL_OUT)
+	var axle := Props._rod(Vector3(0.0, SAIL_HUB_HEIGHT, face - 0.05), hub, 0.07, Treehouse.WOOD_DARK)
 	axle.name = "Axle"
 	frame.add_child(axle)
 	var sails := Node3D.new()
@@ -105,10 +104,11 @@ static func windmill(rot := 0.0) -> Node3D:
 	blades.scale = Vector3.ONE * SAIL_SCALE
 	blades.rotation_degrees = Vector3(0.0, 90.0, 0.0)
 	sails.add_child(blades)
-	# Stopped upright, the way the last breeze left it. (Turned at an angle the
-	# sails' bounds would poke out past the 2 x 2 tiles.)
-	sails.rotation_degrees.z = 0.0
+	# Stopped upright, the way the last breeze left it.
 	frame.add_child(sails)
+	# The cabin's collider covers the tower; widen it to the sails too.
+	for cs in root.get_node("Body").get_children():
+		cs.free()
 	Props._collider_from_model(root)
 	return root
 
@@ -233,19 +233,132 @@ static func wind_chime(rot := 0.0) -> Node3D:
 	return _finish(root)
 
 
-## A banner hanging limp from a pole and crossbar (Fantasy Town Kit banner).
+## A cloth banner hanging limp from a pole and crossbar: a soft strip of
+## cloth with a gentle fold or two (no wind to lift it) and a leaf sewn on.
 static func banner_pole(red: bool, rot := 0.0) -> Node3D:
 	var root := Props._root()
 	var model := _frame(root, rot)
-	var pole := ModelLib.instance(T + "pillar-wood.glb")
-	pole.scale = Vector3(1.0, 2.8, 1.0)
-	pole.position = Vector3(-0.5, 0.0, 0.0)
-	model.add_child(pole)
-	model.add_child(Props._rod(Vector3(-0.5, 2.7, 0.0), Vector3(0.35, 2.7, 0.0), 0.03, WOOD))
-	var banner := Props._scaled(T + ("banner-red.glb" if red else "banner-green.glb"), Vector3(1.6, 1.8, 1.6), -90.0)
-	banner.position = Vector3(-0.05, 2.68 - (banner.get_meta("size") as Vector3).y, 0.0)
-	model.add_child(banner)
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	Treehouse.add_log(st, Vector3(-0.5, 0.0, 0.0), Vector3(-0.5, 2.8, 0.0), 0.07, Treehouse.WOOD)
+	Treehouse.add_log(st, Vector3(-0.55, 2.66, 0.0), Vector3(0.45, 2.66, 0.0), 0.035, Treehouse.WOOD)
+	model.add_child(Treehouse.mesh(st, Treehouse.bark_material(), "Pole"))
+	var cloth_colour := Treehouse.STRAW if red else Treehouse.SKY
+	var cloth := SurfaceTool.new()
+	cloth.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var top := 2.62
+	var length := 1.5
+	var cols := 6
+	var rows := 8
+	for j in rows:
+		for i in cols:
+			var quad := []
+			for c in [[i, j], [i + 1, j], [i + 1, j + 1], [i, j + 1]]:
+				var x := -0.45 + 0.9 * float(c[0]) / cols
+				var y := top - length * float(c[1]) / rows
+				var fold := sin(float(c[0]) / cols * TAU * 1.5) * 0.04 * float(c[1]) / rows
+				quad.append(Vector3(x, y, fold))
+			for k in [0, 1, 2, 0, 2, 3]:
+				cloth.set_color(cloth_colour.darkened(0.06 * float(j) / rows))
+				cloth.set_normal(Vector3.BACK)
+				cloth.add_vertex(quad[k])
+	# A swallow-tail notch at the bottom and a leaf emblem.
+	var leaf_c := Vector3(0.0, top - length * 0.45, 0.035)
+	for v in [leaf_c + Vector3(0, 0.22, 0), leaf_c + Vector3(0.13, 0, 0), leaf_c + Vector3(0, -0.22, 0),
+			leaf_c + Vector3(0, 0.22, 0), leaf_c + Vector3(0, -0.22, 0), leaf_c + Vector3(-0.13, 0, 0)]:
+		cloth.set_color(Treehouse.LEAF_DARK)
+		cloth.set_normal(Vector3.BACK)
+		cloth.add_vertex(v)
+	var cloth_mi := Treehouse.mesh(cloth, Treehouse.flat_material(), "Cloth")
+	cloth_mi.position.x = 0.0
+	model.add_child(cloth_mi)
 	return _finish(root)
+
+
+## A paper lantern on a crook-topped post: a soft, pale-yellow glowing
+## globe hanging quite still.
+static func paper_lantern(rot := 0.0) -> Node3D:
+	var root := Props._root()
+	var model := _frame(root, rot)
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	Treehouse.add_log(st, Vector3(0.0, 0.0, 0.0), Vector3(0.0, 2.2, 0.0), 0.06, Treehouse.WOOD)
+	Treehouse.add_branch(st, Vector3(0.0, 2.15, 0.0), Vector3(0.5, 2.35, 0.0), 0.045, 0.03, Vector3(0.0, 0.12, 0.0), Treehouse.WOOD)
+	model.add_child(Treehouse.mesh(st, Treehouse.bark_material(), "Post"))
+	model.add_child(Props._rod(Vector3(0.5, 2.3, 0.0), Vector3(0.5, 1.95, 0.0), 0.008, ROPE))
+	var globe := MeshInstance3D.new()
+	globe.name = "Lantern"
+	var sphere := SphereMesh.new()
+	sphere.radius = 0.2
+	sphere.height = 0.34
+	globe.mesh = sphere
+	globe.material_override = Treehouse.glow_material(Color(1.0, 0.92, 0.7))
+	globe.position = Vector3(0.5, 1.95 - 0.17, 0.0)
+	model.add_child(globe)
+	return _finish(root)
+
+
+## A small tree growing in a wooden tub: bark trunk, a few branches, soft
+## clumps of muted leaves. Kept inside its tile.
+static func tub_tree(seed_value: int) -> Node3D:
+	var root := Props._root()
+	var model := root.get_node("Model") as Node3D
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed_value
+	_add_tub(model, 0.48, 0.5)
+	var bark := SurfaceTool.new()
+	bark.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var leaves := SurfaceTool.new()
+	leaves.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var height := rng.randf_range(3.0, 3.8)
+	var crown := Vector3(rng.randf_range(-0.1, 0.1), height - 0.9, rng.randf_range(-0.1, 0.1))
+	Treehouse.add_branch(bark, Vector3(0.0, 0.4, 0.0), crown, 0.13, 0.08, Vector3(0.08, 0.0, 0.05), Treehouse.BARK)
+	var tones := [Treehouse.LEAF, Treehouse.LEAF_DARK, Treehouse.LEAF_LIGHT]
+	for i in 3:
+		var a := TAU * i / 3.0 + rng.randf_range(0.0, 1.0)
+		var tip := crown + Vector3(cos(a) * 0.45, rng.randf_range(0.0, 0.4), sin(a) * 0.45)
+		Treehouse.add_branch(bark, crown - Vector3(0.0, 0.4, 0.0), tip, 0.06, 0.03, Vector3(0.0, 0.1, 0.0), Treehouse.BARK)
+		Treehouse.add_leaf_blob(leaves, tip + Vector3(0.0, 0.15, 0.0), Vector3(0.42, 0.32, 0.42), tones[i], rng)
+	Treehouse.add_leaf_blob(leaves, crown + Vector3(0.0, 0.45, 0.0), Vector3(0.55, 0.45, 0.55), Treehouse.LEAF, rng)
+	model.add_child(Treehouse.mesh(bark, Treehouse.bark_material(), "Trunk"))
+	model.add_child(Treehouse.mesh(leaves, Treehouse.flat_material(), "Leaves"))
+	return _finish(root)
+
+
+## A round wooden tub of staves with two rope bands and dark soil on top,
+## standing on the floor. Returns the soil height.
+static func _add_tub(model: Node3D, radius: float, height: float) -> float:
+	var tub := MeshInstance3D.new()
+	tub.name = "Tub"
+	var cyl := CylinderMesh.new()
+	cyl.top_radius = radius
+	cyl.bottom_radius = radius * 0.85
+	cyl.height = height
+	cyl.radial_segments = 12
+	tub.mesh = cyl
+	tub.material_override = MeshUtil.color_material(Treehouse.WOOD)
+	tub.position.y = height / 2.0
+	model.add_child(tub)
+	for y in [0.25, 0.75]:
+		var band := MeshInstance3D.new()
+		var torus := TorusMesh.new()
+		var r := lerpf(radius * 0.85, radius, y)
+		torus.inner_radius = r - 0.01
+		torus.outer_radius = r + 0.03
+		band.mesh = torus
+		band.material_override = MeshUtil.color_material(Treehouse.ROPE)
+		band.position.y = height * y
+		model.add_child(band)
+	var soil := MeshInstance3D.new()
+	var disc := CylinderMesh.new()
+	disc.top_radius = radius * 0.92
+	disc.bottom_radius = radius * 0.92
+	disc.height = 0.04
+	soil.mesh = disc
+	soil.material_override = MeshUtil.color_material(Treehouse.BARK_DARK)
+	soil.position.y = height - 0.06
+	model.add_child(soil)
+	return height - 0.04
 
 
 ## Two posts and a sagging string of little cloth flags between them,
@@ -292,34 +405,34 @@ static func bunting(size: Vector2i) -> Node3D:
 
 # ---------------------------------------------------------------- village bits
 
-## A clay pot of flowers (Nature Kit pot and flower).
+## A wooden tub of flowers (tub built from simple shapes, Nature Kit
+## flowers in it).
 static func planter(flower: String, rot := 0.0) -> Node3D:
 	var root := Props._root()
 	var model := _frame(root, rot)
-	var pot := ModelLib.fitted(NK + "pot_large.glb", Vector2(1.3, 1.3), 1.0, 0.0)
-	model.add_child(pot)
-	var pot_top := ModelUtil.aabb_in(pot, model).end.y
-	var bloom := ModelLib.fitted(NK + flower + ".glb", Vector2(1.0, 1.0), 1.0, 0.8)
-	bloom.position.y = pot_top - 0.08
+	var soil := _add_tub(model, 0.5, 0.55)
+	var bloom := ModelLib.fitted(NK + flower + ".glb", Vector2(0.9, 0.9), 1.0, 0.75)
+	bloom.position.y = soil - 0.02
 	model.add_child(bloom)
+	var moss := SurfaceTool.new()
+	moss.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash(flower)
+	Treehouse.add_leaf_blob(moss, Vector3(0.22, soil + 0.04, -0.15), Vector3(0.2, 0.08, 0.16), Treehouse.MOSS, rng)
+	model.add_child(Treehouse.mesh(moss, Treehouse.flat_material(), "Moss"))
 	return _finish(root)
 
 
-## A little one-room hut (Fantasy Town Kit walls and pointed roof). It has
-## a door but isn't one you can go into.
-static func hut(red_roof: bool, rot := 0.0) -> Node3D:
-	var root := Props._root()
-	var model := _frame(root, rot)
-	var k := ModelLib.TOWN_SCALE
-	for side in [[0.0, "wall-wood-window-shutters"], [90.0, "wall-wood"], [180.0, "wall-wood-window-small"], [-90.0, "wall-wood-door"]]:
-		model.add_child(_one_module_wall(T + side[1] + ".glb", k, Vector3.ZERO, side[0]))
-	Props._add_lit_interior(model, SMALL_INTERIOR_HALF)
-	var roof := ModelLib.piece(T + "roof-point.glb", k, Vector3(0.0, k, 0.0), 0.0)
-	if red_roof:
-		ModelLib.set_atlas(roof, ModelLib.red_roof_atlas())
-	model.add_child(roof)
-	Props._box_collider(root, Vector3(k, k, k), Vector3(0.0, k / 2.0, 0.0))
-	return root
+## A little treehouse hut (log walls, round thatch roof, arched door on the
+## front). You can go in: see the "interior" on its layout entry.
+static func hut(straw_roof: bool, rot := 0.0) -> Node3D:
+	return Treehouse.cabin(Vector2i(1, 1), 0.0, false, 17 + int(rot), Treehouse.STRAW if straw_roof else Treehouse.LEAF)
+
+
+## A treehouse cabin on 2 x 2 tiles, built round a tree trunk that grows up
+## through its leaf-thatch roof. Its door is on the front-left tile.
+static func cabin(seed_value: int, straw_roof: bool) -> Node3D:
+	return Treehouse.cabin(Vector2i(2, 2), -1.0, true, seed_value, Treehouse.STRAW if straw_roof else Treehouse.LEAF)
 
 
 ## The baker's stall, its counter laid with loaves, a pie and croissants.

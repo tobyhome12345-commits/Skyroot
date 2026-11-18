@@ -14,7 +14,12 @@ const PROPS := [
 	{"type": "house", "cell": Vector2i.ZERO, "size": Vector2i(2, 2), "red_roof": true},
 	{"type": "windmill", "cell": Vector2i.ZERO, "size": Vector2i(2, 2)},
 	{"type": "hut", "cell": Vector2i.ZERO},
-	{"type": "hut", "cell": Vector2i.ZERO, "red_roof": true},
+	{"type": "hut", "cell": Vector2i.ZERO, "straw": true},
+	{"type": "cabin", "cell": Vector2i.ZERO, "size": Vector2i(2, 2), "seed": 3},
+	{"type": "cabin", "cell": Vector2i.ZERO, "size": Vector2i(2, 2), "seed": 8, "straw": true},
+	{"type": "tub_tree", "cell": Vector2i.ZERO, "seed": 5},
+	{"type": "paper_lantern", "cell": Vector2i.ZERO},
+	{"type": "planter", "cell": Vector2i.ZERO},
 	{"type": "well", "cell": Vector2i.ZERO},
 	{"type": "notice_board", "cell": Vector2i.ZERO},
 	{"type": "kite_pole", "cell": Vector2i.ZERO},
@@ -44,7 +49,7 @@ func _run() -> void:
 	for p: Dictionary in PROPS:
 		var node := Props.build(p)
 		root.add_child(node)
-		var label := "%s%s" % [p["type"], " (red)" if p.get("red_roof", false) else (" (wood)" if p.get("wood", false) else "")]
+		var label := "%s%s" % [p["type"], " (red)" if p.get("red_roof", false) else (" (wood)" if p.get("wood", false) else (" (straw)" if p.get("straw", false) else ""))]
 		var before := _failures
 		_check_coplanar(node, label)
 		if p["type"] == "windmill":

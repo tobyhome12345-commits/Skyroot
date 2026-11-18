@@ -18,7 +18,7 @@ The Godot console exe is:
   Once a main scene exists, also run it briefly: `godot_console --headless --path . --quit-after 60`
   Read the output; fix any `SCRIPT ERROR` / `ERROR` / `Parse Error` lines before moving on.
 - Gameplay test (movement, blocking, F3 debug): `godot_console --headless --path . --script res://tools/test_movement.gd` — must print `RESULT: ALL PASSED`.
-- Fit check (every island: tiles, flush on ground, overlaps, colliders, gaps): `godot_console --headless --path . --script res://tools/check_fit.gd` must print `RESULT: ALL PASSED`. Run it after any change to props or models.
+- Fit check (every island: tiles, flush on ground, overlaps, colliders, gaps; Leafwind's canopy ground has its own rules: one floor per tile, bark rims, branches below): `godot_console --headless --path . --script res://tools/check_fit.gd` must print `RESULT: ALL PASSED`. Run it after any change to props or models.
 - Tree check (Great Tree: vines and hanging pieces attached, knots / hollows in the bark, branches and leaves attached, roots resting on the ground and not clipping, fallen leaves on open grass): `godot_console --headless --path . --script res://tools/check_tree.gd`
 - Launch check (every island, plus talk spots: shared tiles, launch point on an edge facing sky, landing tile free and reachable, nothing cut off): `godot_console --headless --path . --script res://tools/check_islands.gd`
 - Small islands test (bench and seed "Press E" lines, trader's cycling talks, seed glows and stays put): `godot_console --headless --path . --script res://tools/test_small_islands.gd`
@@ -28,7 +28,7 @@ The Godot console exe is:
 - Part check (every building and composite prop: no two parts sharing a surface, which flickers; windmill sails clear of the tower and roof): `godot_console --headless --path . --script res://tools/check_parts.gd` must print `RESULT: ALL PASSED`. Run it after changing any building.
 - Interior check (all 11 house interiors: tiles, flush stacking, overlaps, walls, colliders, floor, entrance→exit path, physics walk): `godot_console --headless --path . --script res://tools/check_interiors.gd` must print `RESULT: ALL PASSED`. Run it after any interior change.
 - Door test (every house: prompt, E, fade, interior, exit, back in front of the same door): `godot_console --headless --path . --script res://tools/test_doors.gd`
-- Villager check (Pebblenook, Trader's Rock, Leafwind + 5 interiors: shared tiles, doors/exits blocked, flush, colliders, dialogue files): `godot_console --headless --path . --script res://tools/check_villagers.gd`
+- Villager check (Pebblenook, Trader's Rock, Leafwind + 5 interiors with villagers: shared tiles, doors/exits blocked, flush, colliders, dialogue files): `godot_console --headless --path . --script res://tools/check_villagers.gd`
 - Dialogue test (prompt, E opens/advances/closes, typing, player locked, facing, cycling): `godot_console --headless --path . --script res://tools/test_dialogue.gd`
 - Intro test (opening lore scene: starts once, all beats in order, seed glows, camera never clips, Esc / Space skip, no replay, control and colour back, elder recaps): `godot_console --headless --path . --script res://tools/test_intro.gd`
 - Window test (not headless; start maximized, F11 fullscreen, Esc untouched): `godot_console --path . --script res://tools/test_fullscreen.gd`
@@ -41,6 +41,8 @@ The Godot console exe is:
 - Screen effects must look the same at any resolution, so size them by screen fraction, not pixels (see `shaders/tilt_shift.gdshader`).
 
 ## Assets
+
+- Leafwind has its own look (palette, floors, treehouse buildings, bark, haze): build Leafwind things with `scripts/treehouse.gd`, not Pebblenook's Town Kit houses or red / teal roofs.
 
 - Kenney CC0 packs live in `Assets/`. Credits are in `Assets/CREDITS.md`, so update it when a new pack is used.
 - Use the GLB/GLTF files only. The other formats are skipped via `.gdignore`.

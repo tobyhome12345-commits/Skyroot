@@ -28,11 +28,15 @@ const RUG_FILL := 0.9
 
 ## Tiles taken by objects (cell -> object name).
 var occupied := {}
+## Leafwind rooms: log walls, round windows, a trunk in the corner and
+## Leafwind's plank floor (see scripts/treehouse.gd).
+var _treehouse := false
 var map_size := ROOM_SIZE
 
 
 func _ready() -> void:
 	var data: Dictionary = _rooms()[room]
+	_treehouse = data["wall"] == "treehouse"
 	_build_environment()
 	_build_floor()
 	_build_walls(data)
@@ -71,7 +75,7 @@ func _leafwind_rooms() -> Dictionary:
 		# 5. The kite-maker's workshop: kites on racks, cloth, tools, rope.
 		"kite_workshop": {
 			"villager": {"id": "tamsin", "cell": Vector2i(4, 3), "facing": 0.0},
-			"wall": "wall-wood", "windows": [Vector2i(1, 0), Vector2i(4, 0), Vector2i(5, 3)],
+			"wall": "treehouse", "windows": [Vector2i(1, 0), Vector2i(4, 0), Vector2i(5, 3)],
 			"objects": [
 				{"row": [["S:workbench", 0.0, [["S:tool-hammer", 30.0]]], ["F:desk", 0.0, [["F:lampSquareTable", 0.0]]]],
 					"cell": Vector2i(0, 0), "size": Vector2i(2, 1), "against": ["north", "west"], "light": true},
@@ -98,7 +102,7 @@ func _leafwind_rooms() -> Dictionary:
 		# 6. The weather-watcher's lookout: a telescope at the window, books
 		# and a radio on the desk, a comfy chair for long waits.
 		"lookout": {
-			"wall": "wall", "windows": [Vector2i(0, 0), Vector2i(2, 0), Vector2i(4, 0), Vector2i(0, 3), Vector2i(5, 2)],
+			"wall": "treehouse", "windows": [Vector2i(0, 0), Vector2i(2, 0), Vector2i(4, 0), Vector2i(0, 3), Vector2i(5, 2)],
 			"objects": [
 				{"row": [["F:bookcaseOpen", 0.0, [["F:books", 0.0]]], ["F:bookcaseClosed", 0.0, []]],
 					"cell": Vector2i(0, 0), "size": Vector2i(2, 1), "against": ["north", "west"]},
@@ -123,13 +127,13 @@ func _leafwind_rooms() -> Dictionary:
 		# 7. A family home: a little kitchen, a dining table with a pie, a
 		# bunk bed for the children, a sofa and a toy kite.
 		"family_home": {
-			"wall": "wall-wood", "windows": [Vector2i(1, 0), Vector2i(0, 3), Vector2i(5, 2)],
+			"wall": "treehouse", "windows": [Vector2i(1, 0), Vector2i(0, 3), Vector2i(5, 2)],
 			"objects": [
 				{"row": [["F:kitchenFridgeSmall", 0.0, []], ["F:kitchenCabinet", 0.0, [["K:loaf", 0.0]]], ["F:kitchenStove", 0.0, []]],
 					"cell": Vector2i(0, 0), "size": Vector2i(3, 1), "against": ["north", "west"]},
 				{"id": "F:bookcaseOpenLow", "cell": Vector2i(3, 0), "against": ["north"], "top": [["F:bear", 0.0]]},
 				{"id": "F:bedBunk", "cell": Vector2i(4, 0), "size": Vector2i(2, 2), "against": ["north", "east"]},
-				{"id": "F:table", "cell": Vector2i(0, 2), "size": Vector2i(2, 1),
+				{"id": "F:table", "cell": Vector2i(1, 2), "size": Vector2i(2, 1),
 					"top": [["K:pie", 0.0], ["K:croissant", 40.0]],
 					"parts": [["F:chair", 90.0, "west", []], ["F:chair", -90.0, "east", []]]},
 				{"id": "F:sideTable", "cell": Vector2i(0, 3), "rot": 90.0, "against": ["west"],
@@ -147,7 +151,7 @@ func _leafwind_rooms() -> Dictionary:
 		# 8. Old Captain Brisk's cabin (north hut): sea chest, bunk, a map
 		# table, his telescope, a cart wheel for a ship's wheel.
 		"captain_cabin": {
-			"wall": "wall-wood", "windows": [Vector2i(1, 0), Vector2i(4, 0), Vector2i(5, 3)],
+			"wall": "treehouse", "windows": [Vector2i(1, 0), Vector2i(4, 0), Vector2i(5, 3)],
 			"objects": [
 				{"row": [["S:chest", 0.0, []], ["S:barrel", 0.0, []]],
 					"cell": Vector2i(0, 0), "size": Vector2i(2, 1), "against": ["north", "west"]},
@@ -173,7 +177,7 @@ func _leafwind_rooms() -> Dictionary:
 		# 9. Maude the rope-weaver's loft (north-east hut): coils of rope
 		# everywhere, her workbench, a bed and a reading chair.
 		"rope_loft": {
-			"wall": "wall-wood", "windows": [Vector2i(2, 0), Vector2i(0, 2), Vector2i(5, 3)],
+			"wall": "treehouse", "windows": [Vector2i(2, 0), Vector2i(0, 2), Vector2i(5, 3)],
 			"objects": [
 				{"row": [["S:workbench", 0.0, [["S:tool-hammer", 0.0]]], ["F:bookcaseOpenLow", 0.0, [["F:books", 0.0]]]],
 					"cell": Vector2i(0, 0), "size": Vector2i(2, 1), "against": ["north", "west"], "light": true},
@@ -195,7 +199,7 @@ func _leafwind_rooms() -> Dictionary:
 		# 10. Bellamy the chime-maker's workshop (chime corner hut): chimes
 		# waiting to be tuned, a grinder and anvil, a cluttered table.
 		"chime_workshop": {
-			"wall": "wall", "windows": [Vector2i(1, 0), Vector2i(4, 0), Vector2i(0, 3), Vector2i(5, 3)],
+			"wall": "treehouse", "windows": [Vector2i(1, 0), Vector2i(4, 0), Vector2i(0, 3), Vector2i(5, 3)],
 			"objects": [
 				{"row": [["S:workbench", 0.0, [["S:tool-hammer", 30.0]]], ["S:workbench-grind", 0.0, []]],
 					"cell": Vector2i(0, 0), "size": Vector2i(2, 1), "against": ["north", "west"], "light": true},
@@ -221,7 +225,7 @@ func _leafwind_rooms() -> Dictionary:
 		# 11. Barnaby the baker's bakehouse (south-west hut): his oven,
 		# counters of bread and pie, flour barrels, a table with a cake.
 		"bakehouse": {
-			"wall": "wall", "windows": [Vector2i(1, 0), Vector2i(0, 3), Vector2i(5, 3)],
+			"wall": "treehouse", "windows": [Vector2i(1, 0), Vector2i(0, 3), Vector2i(5, 3)],
 			"objects": [
 				{"row": [["F:kitchenCabinet", 0.0, [["K:loaf", 0.0]]], ["F:kitchenStove", 0.0, []], ["F:kitchenCabinet", 0.0, [["K:pie", 0.0]]]],
 					"cell": Vector2i(0, 0), "size": Vector2i(3, 1), "against": ["north", "west"]},
@@ -230,7 +234,7 @@ func _leafwind_rooms() -> Dictionary:
 					"cell": Vector2i(4, 0), "size": Vector2i(2, 1), "against": ["north", "east"]},
 				{"row": [["S:barrel", 0.0, []], ["S:barrel-open", 0.0, []]],
 					"axis": "z", "cell": Vector2i(5, 1), "size": Vector2i(1, 2), "against": ["east"]},
-				{"id": "F:table", "cell": Vector2i(0, 2), "size": Vector2i(2, 1),
+				{"id": "F:table", "cell": Vector2i(1, 2), "size": Vector2i(2, 1),
 					"top": [["K:cake", 0.0], ["K:cutting-board", 30.0]],
 					"parts": [["F:chair", 90.0, "west", []], ["F:chair", -90.0, "east", []]]},
 				{"id": "F:rugRectangle", "cell": Vector2i(3, 2), "size": Vector2i(2, 1), "flat": true},
@@ -429,6 +433,9 @@ func _build_floor() -> void:
 		base_node.position = centre + Vector3(0.0, -board_h - (base[1] as Vector3).y, 0.0)
 		for mi in base_node.find_children("*", "MeshInstance3D", true, false):
 			(mi as MeshInstance3D).material_override = dark
+		if _treehouse:
+			for mi in boards.find_children("*", "MeshInstance3D", true, false):
+				(mi as MeshInstance3D).material_override = _treehouse_floor()
 		base_node.name = "floor_%d_%d" % [cell.x, cell.y]
 		base_node.set_meta("cell", cell)
 		floor_root.add_child(base_node)
@@ -452,7 +459,9 @@ func _build_walls(data: Dictionary) -> void:
 	var wall: String = data["wall"]
 	var windows: Array = data.get("windows", [])
 	var sides := {"north": [Vector2i(0, -1), 90.0], "west": [Vector2i(-1, 0), 180.0], "east": [Vector2i(1, 0), 0.0]}
-	for cell in room_cells():
+	if _treehouse:
+		_build_log_walls(walls, sides, windows)
+	for cell in room_cells() if not _treehouse else []:
 		for side: String in sides:
 			var d: Vector2i = sides[side][0]
 			if in_room(cell + d):
@@ -475,6 +484,77 @@ func _build_walls(data: Dictionary) -> void:
 	_wall_box(body, Vector3(t, h, d), Vector3(-w / 2.0 + t / 2.0, h / 2.0, 0.0))
 	_wall_box(body, Vector3(t, h, d), Vector3(w / 2.0 - t / 2.0, h / 2.0, 0.0))
 	_wall_box(body, Vector3(w, h, t), Vector3(0.0, h / 2.0, d / 2.0 + t / 2.0))
+
+
+## Treehouse walls (Leafwind): one piece per tile edge, each a stack of
+## round logs kept inside the outer band of the tile (furniture keeps
+## WALL_CLEARANCE away), with a round sky-blue window on window tiles.
+## A tree trunk grows up through the back-left corner, with a leafy
+## branch along the top of the back wall.
+const LOG_INSET := 0.14
+const LOG_RADIUS := 0.12
+
+
+func _build_log_walls(walls: Node3D, sides: Dictionary, windows: Array) -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash(room)
+	var h := Grid.TILE / 2.0
+	for cell in room_cells():
+		for side: String in sides:
+			var d: Vector2i = sides[side][0]
+			if in_room(cell + d):
+				continue
+			var piece := Node3D.new()
+			piece.name = "wall_%s_%d_%d" % [side, cell.x, cell.y]
+			var st := SurfaceTool.new()
+			st.begin(Mesh.PRIMITIVE_TRIANGLES)
+			var c := cell_center(cell)
+			var e := Vector3(d.x, 0.0, d.y)
+			var along := Vector3(absf(e.z), 0.0, absf(e.x))
+			var line := c + e * (h - LOG_INSET)
+			var rows := int(WALL_HEIGHT / (2.0 * LOG_RADIUS))
+			for i in rows:
+				var y := LOG_RADIUS + 2.0 * LOG_RADIUS * i
+				Treehouse.add_log(st, line - along * h + Vector3(0.0, y, 0.0), line + along * h + Vector3(0.0, y, 0.0),
+						LOG_RADIUS, Treehouse.WOOD.darkened(rng.randf_range(-0.05, 0.1)), 8)
+			piece.add_child(Treehouse.mesh(st, Treehouse.bark_material(), "Logs"))
+			if cell in windows:
+				var face := c + e * (h - LOG_INSET - LOG_RADIUS - 0.005)
+				piece.add_child(Treehouse.round_window(face + Vector3(0.0, 1.5, 0.0), -e, 0.42, Treehouse.SKY))
+			walls.add_child(piece)
+	# The trunk in the back-left corner and its branch along the back wall.
+	var corner := Vector3(-ROOM_SIZE.x * h, 0.0, -ROOM_SIZE.y * h)
+	var bark := SurfaceTool.new()
+	bark.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var leaves := SurfaceTool.new()
+	leaves.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var trunk_r := 0.5
+	# Half buried in the corner, clear of furniture standing against the walls.
+	var trunk := corner + Vector3(1.0, 0.0, 1.0) * (WALL_CLEARANCE - 0.05 - trunk_r)
+	Treehouse.add_branch(bark, trunk + Vector3(0.0, 0.02, 0.0), trunk + Vector3(0.05, WALL_HEIGHT + 0.6, 0.05), trunk_r, trunk_r * 0.85, Vector3(0.05, 0.0, 0.05), Treehouse.BARK, 6)
+	var branch_z := corner.z + LOG_INSET
+	var a := Vector3(trunk.x + 0.2, WALL_HEIGHT - 0.25, branch_z)
+	var b := Vector3(corner.x + ROOM_SIZE.x * Grid.TILE * 0.62, WALL_HEIGHT + 0.05, branch_z)
+	Treehouse.add_branch(bark, a, b, 0.16, 0.06, Vector3(0.0, 0.12, 0.0), Treehouse.BARK, 8)
+	for k in 7:
+		var t := 0.12 + 0.13 * k
+		var p := a.lerp(b, t) + Vector3(0.0, 0.12 * sin(PI * t) - 0.08, 0.0)
+		Treehouse.add_leaf_blob(leaves, p, Vector3(0.34, 0.22, 0.1), [Treehouse.LEAF, Treehouse.LEAF_DARK, Treehouse.LEAF_LIGHT][k % 3], rng)
+	var tree := Node3D.new()
+	tree.name = "wall_trunk"
+	tree.add_child(Treehouse.mesh(bark, Treehouse.bark_material(), "Trunk"))
+	tree.add_child(Treehouse.mesh(leaves, Treehouse.flat_material(), "Leaves"))
+	walls.add_child(tree)
+
+
+## Leafwind's plank floor, tinted warm wood (the boards' mesh has no vertex
+## colours, so a copy of the floor material with a fixed tint is used).
+func _treehouse_floor() -> Material:
+	if not has_meta("floor_mat"):
+		var m := (Treehouse.floor_material("deck").duplicate() as ShaderMaterial)
+		m.set_shader_parameter("tint", Treehouse.WOOD)
+		set_meta("floor_mat", m)
+	return get_meta("floor_mat")
 
 
 func _wall_box(body: StaticBody3D, size: Vector3, pos: Vector3) -> void:

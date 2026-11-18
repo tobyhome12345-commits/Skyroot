@@ -262,6 +262,9 @@ func _check_paths_and_doors(props: Array[Node3D]) -> void:
 # ---------------------------------------------------------------- ground
 
 func _check_ground() -> void:
+	if _island.get("GROUND_STYLE") == "canopy":
+		_check_canopy_ground()
+		return
 	var floor_cells := {}
 	for s in _island.get_node("FloorBody").get_children():
 		var cs := s as CollisionShape3D
@@ -326,6 +329,55 @@ func _check_ground() -> void:
 	_check_coplanar(mesh)
 	var mesh_box := mesh.get_aabb()
 	_expect(mesh_box.position.y < -Grid.TILE, "rocky underside hangs below the island (bottom y=%.1f)" % mesh_box.position.y)
+
+
+## Leafwind-style ground (wooden decks over great branches, no grass, rock
+## or cliffs): floor collision and a flat floor surface on every land tile
+## (exactly one floor kind per tile, so floors never overlap and flicker),
+## walls on every edge, a bark rim on every outer edge, branches below.
+func _check_canopy_ground() -> void:
+	var floor_cells := {}
+	for s in _island.get_node("FloorBody").get_children():
+		floor_cells[Grid.world_to_cell((s as CollisionShape3D).position, _island.map_size)] = true
+	var wall_cells := {}
+	for s in _island.get_node("EdgeWalls").get_children():
+		wall_cells[Grid.world_to_cell((s as CollisionShape3D).position, _island.map_size)] = true
+	var land: Array = _island.land_cells()
+	for c in _island.ground_cells():
+		for d in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+			if not _island.is_ground(c + d):
+				_expect(wall_cells.has(c + d), "edge next to %s is walled (at %s)" % [c, c + d])
+	for c in land:
+		_expect(floor_cells.has(c), "land tile %s has floor collision" % c)
+	_expect(floor_cells.size() == land.size(), "one floor box per land tile (%d / %d)" % [floor_cells.size(), land.size()])
+	var covered := {}  # cell -> floor mesh name
+	var rim_edges := -1
+	for mi in _island.get_node("Ground").get_children():
+		if mi.has_meta("rim_edges"):
+			rim_edges = mi.get_meta("rim_edges")
+			continue
+		var box := (mi as MeshInstance3D).mesh.get_aabb()
+		_expect(absf(box.position.y) <= 0.001 and absf(box.end.y) <= 0.001, "%s lies flat at y = 0" % mi.name)
+		var faces := (mi as MeshInstance3D).mesh.get_faces()
+		var mine := {}
+		for i in range(0, faces.size(), 3):
+			mine[Grid.world_to_cell((faces[i] + faces[i + 1] + faces[i + 2]) / 3.0, _island.map_size)] = true
+		for c in mine:
+			if covered.has(c):
+				_fail("tile %s has two floors (%s and %s): they would flicker" % [c, covered[c], mi.name])
+			covered[c] = mi.name
+	for c in land:
+		_expect(covered.has(c), "a floor covers land tile %s" % c)
+	var edges := 0
+	for c in land:
+		for d in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+			if not _island.is_land(c + d):
+				edges += 1
+	_expect(rim_edges == edges, "every outer edge has a bark rim (%d / %d)" % [rim_edges, edges])
+	var branches := _island.get_node_or_null("Underside/Branches") as MeshInstance3D
+	_expect(branches != null and branches.mesh.get_aabb().position.y < -Grid.TILE, "great branches hold the pads up from below")
+	if branches:
+		_expect(branches.mesh.get_aabb().end.y <= -_island.RIM_DEPTH + 0.01, "the branches stay under the floor")
 
 
 ## Two visible surfaces in the same plane flicker (z-fighting). Every

@@ -17,6 +17,7 @@ The Godot console exe is:
   (loads and parses every script; works even before a main scene exists).
   Once a main scene exists, also run it briefly: `godot_console --headless --path . --quit-after 60`
   Read the output; fix any `SCRIPT ERROR` / `ERROR` / `Parse Error` lines before moving on.
+- Title screen test (main scene, title and menu layout, W/S / arrows / E / Enter, smooth highlight, Settings panel with Fullscreen and Back, display-only Great Tree backdrop that leaves the game state alone, seamless camera loop clear of the tree, light particles, skip switch, Play fades into Pebblenook): `godot_console --headless --path . --script res://tools/test_title.gd`
 - Gameplay test (movement, blocking, F3 debug): `godot_console --headless --path . --script res://tools/test_movement.gd` — must print `RESULT: ALL PASSED`.
 - Fit check (every island: tiles, flush on ground, overlaps, colliders, gaps; Leafwind's canopy ground has its own rules: one floor per tile, bark rims, branches below): `godot_console --headless --path . --script res://tools/check_fit.gd` must print `RESULT: ALL PASSED`. Run it after any change to props or models.
 - Tree check (Great Tree: vines and hanging pieces attached, knots / hollows in the bark, branches and leaves attached, roots resting on the ground and not clipping, fallen leaves on open grass): `godot_console --headless --path . --script res://tools/check_tree.gd`
@@ -34,6 +35,12 @@ The Godot console exe is:
 - Intro test (opening lore scene: starts once, all beats in order, seed glows, camera never clips, Esc / Space skip, no replay, control and colour back, elder recaps): `godot_console --headless --path . --script res://tools/test_intro.gd`
 - Window test (not headless; start maximized, F11 fullscreen, Esc untouched): `godot_console --path . --script res://tools/test_fullscreen.gd`
 - Check the version: `godot_console --version`
+
+## Title screen
+
+- The main scene is the title screen (`scenes/title.tscn`, `scripts/title_screen.gd`). Play starts the game exactly as before (Pebblenook, the opening lore scene the first time) via `Game.start_game()`.
+- **Skip it while testing:** launch with `godot_console --path . -- --skip-title`, or set the project setting `application/run/skip_title` to `true` (Project Settings > Application > Run > Skip Title; it is `false` by default, so players always see the title screen). Tools that load an island scene directly don't see the title screen at all.
+- The backdrop is the real Great Tree island with `display_only = true` (no player, no collision, the game state untouched): any island can be shown that way.
 
 ## Display
 

@@ -9,7 +9,8 @@ var _island: Node3D
 
 
 func _initialize() -> void:
-	var scene: PackedScene = load(ProjectSettings.get_setting("application/run/main_scene"))
+	# The game itself (the main scene is the title screen).
+	var scene: PackedScene = load("res://scenes/pebblenook.tscn")
 	var level := scene.instantiate()
 	root.add_child(level)
 	_island = level.get_node("Island")

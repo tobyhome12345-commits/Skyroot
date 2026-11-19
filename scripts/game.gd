@@ -197,6 +197,17 @@ func _fade_to(alpha: float) -> void:
 	await fade(alpha, FADE_TIME)
 
 
+## Leave the title screen: fade to black, start the game scene (as the game
+## always has started), then fade back in. Runs here, in the autoload, so it
+## carries on after the title scene is gone.
+func start_game(scene_path := OUTSIDE_SCENE) -> void:
+	await fade(1.0, 0.8)
+	get_tree().change_scene_to_file(scene_path)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await fade(0.0, 0.8)
+
+
 ## Fades the whole screen to (alpha = 1) or from (alpha = 0) a colour.
 func fade(alpha: float, time: float, color := Color.BLACK) -> void:
 	if alpha > 0.0:

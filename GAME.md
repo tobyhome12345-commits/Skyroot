@@ -17,6 +17,10 @@
 - **The traveller** (the player) is a human from far below the clouds, carrying a withered seed from the Great Tree that has been passed down in their family. It glows when they are near an island that needs help.
 - **Colour level:** the world's colour is one value (`Game.colour_level`, 0 = drained, 1 = full). For now only the opening scene uses it; later the world's joy will drive it.
 
+## Title screen
+
+- The game opens on a cozy title screen: a slow golden-hour camera drifting round the Great Tree island with the distant islands, clouds and haze in the sky, leaves and light dust floating past, "Skyroot" in hand-set letters bobbing gently, and Play / Settings (Fullscreen) / Quit. Play fades into the game as it always started.
+
 ## The shared sky
 
 - Every island has one fixed place in the sky (`data/sky_map.json`), and appears there, as a small low-detail landmark, from every other island: Leafwind's platforms, windmill and canopy; Pebblenook's houses; the small islands as tiny floating silhouettes; the Great Tree far to the north. They sit among clouds, bob gently, and fade into the distance haze. Rootholm, Barkton and Seedhaven have empty places for later.

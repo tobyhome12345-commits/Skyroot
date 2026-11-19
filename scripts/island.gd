@@ -47,6 +47,10 @@ const ROCK_COLOR := Color(0.6, 0.6, 0.76)
 ## Tile the player starts on.
 @export var start_cell := Vector2i(7, 8)
 @export var player_path: NodePath
+## Display only (the title screen's backdrop): built and drawn as normal,
+## but it doesn't count as arriving, has no player, and nothing in it
+## collides, triggers or reacts.
+@export var display_only := false
 
 ## Height of the invisible walls around the island edge.
 const EDGE_WALL_HEIGHT := 4.0
@@ -155,7 +159,8 @@ func _prop_layout() -> Array[Dictionary]:
 func _ready() -> void:
 	map = _map()
 	map_size = Vector2i(map[0].length(), map.size())
-	Game.arrive_at(island_id)
+	if not display_only:
+		Game.arrive_at(island_id)
 	_build_ground()
 	_build_edge_walls()
 	_reserve_extra()
@@ -165,7 +170,23 @@ func _ready() -> void:
 	_place_villagers()
 	_after_build()
 	_add_distant_views()
-	_spawn_player()
+	if display_only:
+		_make_display_only()
+	else:
+		_spawn_player()
+
+
+## Nothing collides or reacts: floors, walls, props, villagers, doors and
+## talk spots are switched off; only the look is left.
+func _make_display_only() -> void:
+	for n in find_children("*", "CollisionObject3D", true, false):
+		var co := n as CollisionObject3D
+		co.collision_layer = 0
+		co.collision_mask = 0
+		if co is Area3D:
+			(co as Area3D).monitoring = false
+			(co as Area3D).monitorable = false
+		co.process_mode = Node.PROCESS_MODE_DISABLED
 
 
 ## A spot where pressing E reads a line from data/dialogue/<id>.json
